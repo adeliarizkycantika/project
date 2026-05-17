@@ -11,6 +11,7 @@ class Makanan extends Model
     protected $table = 'makanan';
 
     protected $fillable = [
+        'user_id',
         'kategori_makanan_id',
         'nama',
         'deskripsi',
@@ -28,6 +29,11 @@ class Makanan extends Model
         'lemak' => 'decimal:2',
     ];
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(KategoriMakanan::class, 'kategori_makanan_id');
@@ -42,4 +48,14 @@ class Makanan extends Model
     {
         return $this->hasMany(MealPlanItem::class, 'makanan_id');
     }
-}
+
+    public function isGlobal(): bool
+    {
+        return $this->user_id === null;
+    }
+
+    public function isOwnedBy(int $userId): bool
+    {
+        return (int) $this->user_id === $userId;
+    }
+}           

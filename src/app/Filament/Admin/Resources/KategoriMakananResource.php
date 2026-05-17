@@ -3,31 +3,48 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\KategoriMakananResource\Pages;
-use App\Filament\Admin\Resources\KategoriMakananResource\RelationManagers;
 use App\Models\KategoriMakanan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class KategoriMakananResource extends Resource
 {
     protected static ?string $model = KategoriMakanan::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-tag';
+
+    protected static ?string $navigationGroup = 'Meal Planner';
+
+    protected static ?string $navigationLabel = 'Kategori Makanan';
+
+    protected static ?string $modelLabel = 'Kategori Makanan';
+
+    protected static ?string $pluralModelLabel = 'Kategori Makanan';
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('nama')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Textarea::make('deskripsi')
-                    ->columnSpanFull(),
+                Forms\Components\Section::make('Informasi Kategori')
+                    ->schema([
+                        Forms\Components\TextInput::make('nama')
+                            ->label('Nama Kategori')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->maxLength(255),
+
+                        Forms\Components\Textarea::make('deskripsi')
+                            ->label('Deskripsi')
+                            ->rows(4)
+                            ->nullable()
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(1),
             ]);
     }
 
@@ -36,34 +53,50 @@ class KategoriMakananResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('nama')
+                    ->label('Nama Kategori')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('deskripsi')
+                    ->label('Deskripsi')
+                    ->limit(50)
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('makanan_count')
+                    ->label('Jumlah Makanan')
+                    ->counts('makanan')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Dibuat')
+                    ->dateTime('d M Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->label('Diubah')
+                    ->dateTime('d M Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->emptyStateHeading('Belum ada kategori makanan')
+            ->emptyStateDescription('Tambahkan kategori seperti Sarapan, Makan Siang, Makan Malam, Snack, atau Minuman.')
+            ->emptyStateIcon('heroicon-o-tag');
     }
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
