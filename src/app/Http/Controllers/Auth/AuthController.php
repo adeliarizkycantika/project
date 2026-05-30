@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -17,6 +18,11 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+    public function showRegister(): View
+    {
+        return view('auth.register');
+    }
+
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
@@ -24,30 +30,19 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $remember = $request->boolean('remember');
+        $remember = (bool) $request->boolean('remember');
 
         if (! Auth::attempt($credentials, $remember)) {
             return back()
                 ->withErrors([
-                    'email' => 'Email atau password salah.',
+                    'email' => 'Email atau password tidak sesuai.',
                 ])
                 ->onlyInput('email');
         }
 
         $request->session()->regenerate();
 
-        $user = Auth::user();
-
-        if ($user && method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return redirect('/admin');
-        }
-
         return redirect()->route('user.beranda');
-    }
-
-    public function showRegister(): View
-    {
-        return view('auth.register');
     }
 
     public function register(Request $request): RedirectResponse
@@ -56,33 +51,39 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'daily_calorie_target' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $user = User::create([
+        $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => 'user',
-            'daily_calorie_target' => $validated['daily_calorie_target'] ?? 2000,
-        ]);
+        ];
 
-        if (method_exists($user, 'assignRole')) {
-            $user->assignRole('user');
+        if (Schema::hasColumn('users', 'role')) {
+            $userData['role'] = 'user';
         }
 
-        Auth::login($user);
+        if (Schema::hasColumn('users', 'daily_calorie_target')) {
+            $userData['daily_calorie_target'] = 2000;
+        }
 
-        $request->session()->regenerate();
+        $user = User::create($userData);
 
-        return redirect()->route('user.beranda');
+        if (method_exists($user, 'syncRoles')) {
+            $user->syncRoles(['user']);
+        }
+
+        return redirect()
+            ->route('login')
+            ->with('success', 'Registrasi berhasil. Silakan login untuk masuk ke Meal Planner.');
     }
 
     public function logout(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
+        Auth::logout();
 
         $request->session()->invalidate();
+
         $request->session()->regenerateToken();
 
         return redirect()->route('login');

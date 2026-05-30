@@ -31,6 +31,10 @@ class MealPlanSaya extends Component
 
     public ?string $catatan_item = null;
 
+    public string $searchMealPlan = '';
+
+    public ?string $filterTanggalRencana = null;
+
     public function mount(): void
     {
         $this->tanggal_rencana = now()->format('Y-m-d');
@@ -170,6 +174,14 @@ class MealPlanSaya extends Component
         session()->flash('success', "Daftar belanja berhasil dibuat. Total {$jumlahItem} item belanja.");
     }
 
+    public function resetFilterMealPlan(): void
+    {
+        $this->reset([
+            'searchMealPlan',
+            'filterTanggalRencana',
+        ]);
+    }
+
     private function getUserId(): int
     {
         $userId = Auth::id();
@@ -221,6 +233,16 @@ class MealPlanSaya extends Component
     }
 
     #[Computed]
+    public function mealPlanOptions(): Collection
+    {
+        return MealPlan::query()
+            ->where('user_id', $this->getUserId())
+            ->orderByDesc('tanggal_rencana')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    #[Computed]
     public function mealPlans(): Collection
     {
         return MealPlan::query()
@@ -229,6 +251,16 @@ class MealPlanSaya extends Component
                 'itemDaftarBelanja',
             ])
             ->where('user_id', $this->getUserId())
+            ->when($this->searchMealPlan !== '', function ($query) {
+                $query->where(function ($subQuery) {
+                    $subQuery
+                        ->where('judul', 'like', '%' . $this->searchMealPlan . '%')
+                        ->orWhere('catatan', 'like', '%' . $this->searchMealPlan . '%');
+                });
+            })
+            ->when($this->filterTanggalRencana, function ($query) {
+                $query->whereDate('tanggal_rencana', $this->filterTanggalRencana);
+            })
             ->orderByDesc('tanggal_rencana')
             ->orderByDesc('id')
             ->get();

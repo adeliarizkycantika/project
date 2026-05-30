@@ -12,6 +12,7 @@ class ItemDaftarBelanja extends Model
     protected $fillable = [
         'user_id',
         'meal_plan_id',
+        'tanggal_belanja',
         'bahan_makanan_id',
         'nama_item',
         'jumlah',
@@ -20,6 +21,7 @@ class ItemDaftarBelanja extends Model
     ];
 
     protected $casts = [
+        'tanggal_belanja' => 'date',
         'jumlah' => 'decimal:2',
         'sudah_dibeli' => 'boolean',
     ];
@@ -36,6 +38,6 @@ class ItemDaftarBelanja extends Model
 
     public function bahanMakanan(): BelongsTo
     {
-        return $this->belongsTo(BahanMakanan::class, 'bahan_makanan_id');
+        return $this->belongsTo(BahanMakanan::class);
     }
 }

@@ -45,7 +45,6 @@
             color: #0f172a;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .form-input,
@@ -92,6 +91,18 @@
             color: #92400e;
             border: 1px solid #fde68a;
             font-weight: 700;
+        }
+
+        .filter-card {
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 220px auto;
+            gap: 12px;
+            align-items: end;
         }
 
         .meal-list-card {
@@ -161,6 +172,12 @@
             font-weight: 600;
         }
 
+        .meal-plan-note {
+            margin: 10px 0 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
         .meal-plan-meta {
             margin: 10px 0 0;
             color: #64748b;
@@ -220,8 +237,19 @@
             border-radius: 12px;
         }
 
+        .filter-info {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
         @media (max-width: 980px) {
             .mp-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -267,7 +295,7 @@
                         <input
                             type="text"
                             wire:model="judul"
-                            placeholder="Contoh: Meal Plan Hari Ini"
+                            placeholder="Contoh: Meal Plan Hari Senin"
                             class="form-input"
                         >
 
@@ -328,7 +356,7 @@
                         <select wire:model="selectedMealPlanId" class="form-select">
                             <option value="">Pilih meal plan</option>
 
-                            @foreach ($this->mealPlans as $mealPlan)
+                            @foreach ($this->mealPlanOptions as $mealPlan)
                                 <option value="{{ $mealPlan->id }}">
                                     {{ $mealPlan->judul }} - {{ $mealPlan->tanggal_rencana->format('d M Y') }}
                                 </option>
@@ -350,7 +378,13 @@
 
                             @foreach ($this->makananOptions as $makanan)
                                 <option value="{{ $makanan->id }}">
-                                    {{ $makanan->nama }} - {{ $makanan->kalori }} kkal
+                                    {{ $makanan->nama }}
+                                    @if ($makanan->user_id)
+                                        - Makanan Saya
+                                    @else
+                                        - Global
+                                    @endif
+                                    - {{ $makanan->kalori }} kkal
                                 </option>
                             @endforeach
                         </select>
@@ -417,165 +451,218 @@
             </div>
         </div>
 
-        <div class="card meal-list-card">
-            <div class="meal-list-header">
-                <div>
-                    <h2 class="meal-list-title">
-                        Daftar Meal Plan
-                    </h2>
+        <div>
+            <div class="card filter-card">
+                <h2 class="form-title">
+                    Filter Meal Plan
+                </h2>
 
-                    <p class="meal-list-subtitle">
-                        Kelola jadwal makan dan detail makanan kamu.
-                    </p>
+                <div class="filter-grid">
+                    <div>
+                        <label class="form-label">
+                            Cari Judul / Catatan
+                        </label>
+
+                        <input
+                            type="text"
+                            wire:model.live="searchMealPlan"
+                            class="form-input"
+                            placeholder="Cari meal plan..."
+                        >
+                    </div>
+
+                    <div>
+                        <label class="form-label">
+                            Tanggal Rencana
+                        </label>
+
+                        <input
+                            type="date"
+                            wire:model.live="filterTanggalRencana"
+                            class="form-input"
+                        >
+                    </div>
+
+                    <div>
+                        <button
+                            type="button"
+                            wire:click="resetFilterMealPlan"
+                            class="btn btn-outline"
+                            style="height: 46px; width: 100%;"
+                        >
+                            Reset
+                        </button>
+                    </div>
                 </div>
+
+                <p class="filter-info">
+                    Menampilkan {{ $this->mealPlans->count() }} meal plan sesuai filter.
+                </p>
             </div>
 
-            <div class="meal-list-body">
-                @forelse ($this->mealPlans as $mealPlan)
-                    <div class="meal-plan-panel">
-                        <div class="meal-plan-top">
-                            <div>
-                                <h3 class="meal-plan-name">
-                                    {{ $mealPlan->judul }}
-                                </h3>
+            <div class="card meal-list-card">
+                <div class="meal-list-header">
+                    <div>
+                        <h2 class="meal-list-title">
+                            Daftar Meal Plan
+                        </h2>
 
-                                <p class="meal-plan-date">
-                                    {{ $mealPlan->tanggal_rencana->format('d M Y') }}
-                                </p>
+                        <p class="meal-list-subtitle">
+                            Kelola jadwal makan dan detail makanan kamu.
+                        </p>
+                    </div>
+                </div>
 
-                                @if ($mealPlan->catatan)
-                                    <p class="meal-plan-note">
-                                        {{ $mealPlan->catatan }}
-                                    </p>
-                                @endif
+                <div class="meal-list-body">
+                    @forelse ($this->mealPlans as $mealPlan)
+                        <div class="meal-plan-panel">
+                            <div class="meal-plan-top">
+                                <div>
+                                    <h3 class="meal-plan-name">
+                                        {{ $mealPlan->judul }}
+                                    </h3>
 
-                                <p class="meal-plan-meta">
-                                    {{ $mealPlan->items->count() }} menu •
-                                    {{ $mealPlan->itemDaftarBelanja->count() }} item belanja
-                                </p>
-                            </div>
-
-                            <div class="meal-plan-actions">
-                                <button
-                                    type="button"
-                                    wire:click="selectMealPlan({{ $mealPlan->id }})"
-                                    class="btn btn-outline small-btn"
-                                >
-                                    Pilih
-                                </button>
-
-                                <button
-                                    type="button"
-                                    wire:click="generateDaftarBelanja({{ $mealPlan->id }})"
-                                    class="btn btn-success small-btn"
-                                >
-                                    Generate Belanja
-                                </button>
-
-                                <button
-                                    type="button"
-                                    wire:click="deleteMealPlan({{ $mealPlan->id }})"
-                                    wire:confirm="Yakin ingin menghapus meal plan ini?"
-                                    class="btn btn-danger small-btn"
-                                >
-                                    Hapus
-                                </button>
-                            </div>
-                        </div>
-
-                        @forelse ($mealPlan->items as $item)
-                            <div class="meal-item-row">
-                                <div class="meal-item-content">
-                                    <div class="pill-group">
-                                        <span class="pill pill-gray">
-                                            @switch($item->waktu_makan)
-                                                @case('sarapan')
-                                                    Sarapan
-                                                    @break
-
-                                                @case('makan_siang')
-                                                    Makan Siang
-                                                    @break
-
-                                                @case('makan_malam')
-                                                    Makan Malam
-                                                    @break
-
-                                                @case('snack')
-                                                    Snack
-                                                    @break
-
-                                                @default
-                                                    {{ $item->waktu_makan }}
-                                            @endswitch
-                                        </span>
-
-                                        @if ($item->sudah_dikonsumsi)
-                                            <span class="pill pill-green">
-                                                Sudah Dikonsumsi
-                                            </span>
-                                        @else
-                                            <span class="pill pill-yellow">
-                                                Belum Dikonsumsi
-                                            </span>
-                                        @endif
-                                    </div>
-
-                                    <p class="meal-item-name">
-                                        {{ $item->makanan?->nama ?? 'Makanan tidak ditemukan' }}
+                                    <p class="meal-plan-date">
+                                        {{ $mealPlan->tanggal_rencana->format('d M Y') }}
                                     </p>
 
-                                    <p class="meal-item-desc">
-                                        {{ $item->porsi }} porsi •
-                                        {{ number_format(($item->makanan?->kalori ?? 0) * $item->porsi) }} kkal
-                                    </p>
-
-                                    @if ($item->catatan)
-                                        <p class="meal-item-desc">
-                                            Catatan: {{ $item->catatan }}
+                                    @if ($mealPlan->catatan)
+                                        <p class="meal-plan-note">
+                                            {{ $mealPlan->catatan }}
                                         </p>
                                     @endif
+
+                                    <p class="meal-plan-meta">
+                                        {{ $mealPlan->items->count() }} menu •
+                                        {{ $mealPlan->itemDaftarBelanja->count() }} item belanja
+                                    </p>
                                 </div>
 
-                                <div class="meal-item-actions">
+                                <div class="meal-plan-actions">
                                     <button
                                         type="button"
-                                        wire:click="toggleKonsumsi({{ $item->id }})"
-                                        class="btn {{ $item->sudah_dikonsumsi ? 'btn-danger' : 'btn-success' }} small-btn"
+                                        wire:click="selectMealPlan({{ $mealPlan->id }})"
+                                        class="btn btn-outline small-btn"
                                     >
-                                        {{ $item->sudah_dikonsumsi ? 'Batalkan' : 'Tandai Dimakan' }}
+                                        Pilih
                                     </button>
 
                                     <button
                                         type="button"
-                                        wire:click="deleteItem({{ $item->id }})"
-                                        wire:confirm="Yakin ingin menghapus item ini?"
+                                        wire:click="generateDaftarBelanja({{ $mealPlan->id }})"
+                                        class="btn btn-success small-btn"
+                                    >
+                                        Generate Belanja
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        wire:click="deleteMealPlan({{ $mealPlan->id }})"
+                                        wire:confirm="Yakin ingin menghapus meal plan ini?"
                                         class="btn btn-danger small-btn"
                                     >
                                         Hapus
                                     </button>
                                 </div>
                             </div>
-                        @empty
-                            <div class="empty-state">
-                                <p class="empty-title">Belum ada makanan</p>
-                                <p class="empty-text">
-                                    Pilih meal plan ini lalu tambahkan makanan dari form di sebelah kiri.
-                                </p>
-                            </div>
-                        @endforelse
-                    </div>
-                @empty
-                    <div class="empty-state">
-                        <p class="empty-title">
-                            Belum ada meal plan
-                        </p>
 
-                        <p class="empty-text">
-                            Buat meal plan pertama kamu dari form di sebelah kiri.
-                        </p>
-                    </div>
-                @endforelse
+                            @forelse ($mealPlan->items as $item)
+                                <div class="meal-item-row">
+                                    <div class="meal-item-content">
+                                        <div class="pill-group">
+                                            <span class="pill pill-gray">
+                                                @switch($item->waktu_makan)
+                                                    @case('sarapan')
+                                                        Sarapan
+                                                        @break
+
+                                                    @case('makan_siang')
+                                                        Makan Siang
+                                                        @break
+
+                                                    @case('makan_malam')
+                                                        Makan Malam
+                                                        @break
+
+                                                    @case('snack')
+                                                        Snack
+                                                        @break
+
+                                                    @default
+                                                        {{ $item->waktu_makan }}
+                                                @endswitch
+                                            </span>
+
+                                            @if ($item->sudah_dikonsumsi)
+                                                <span class="pill pill-green">
+                                                    Sudah Dikonsumsi
+                                                </span>
+                                            @else
+                                                <span class="pill pill-yellow">
+                                                    Belum Dikonsumsi
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <p class="meal-item-name">
+                                            {{ $item->makanan?->nama ?? 'Makanan tidak ditemukan' }}
+                                        </p>
+
+                                        <p class="meal-item-desc">
+                                            {{ $item->porsi }} porsi •
+                                            {{ number_format(($item->makanan?->kalori ?? 0) * $item->porsi) }} kkal
+                                        </p>
+
+                                        @if ($item->catatan)
+                                            <p class="meal-item-desc">
+                                                Catatan: {{ $item->catatan }}
+                                            </p>
+                                        @endif
+                                    </div>
+
+                                    <div class="meal-item-actions">
+                                        <button
+                                            type="button"
+                                            wire:click="toggleKonsumsi({{ $item->id }})"
+                                            class="btn {{ $item->sudah_dikonsumsi ? 'btn-danger' : 'btn-success' }} small-btn"
+                                        >
+                                            {{ $item->sudah_dikonsumsi ? 'Batalkan' : 'Tandai Dimakan' }}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            wire:click="deleteItem({{ $item->id }})"
+                                            wire:confirm="Yakin ingin menghapus item ini?"
+                                            class="btn btn-danger small-btn"
+                                        >
+                                            Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="empty-state">
+                                    <p class="empty-title">
+                                        Belum ada makanan
+                                    </p>
+
+                                    <p class="empty-text">
+                                        Pilih meal plan ini lalu tambahkan makanan dari form di sebelah kiri.
+                                    </p>
+                                </div>
+                            @endforelse
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <p class="empty-title">
+                                Meal plan tidak ditemukan
+                            </p>
+
+                            <p class="empty-text">
+                                Coba ubah kata pencarian atau reset filter.
+                            </p>
+                        </div>
+                    @endforelse
+                </div>
             </div>
         </div>
     </div>
