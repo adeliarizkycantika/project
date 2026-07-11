@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\MakananResource\Pages;
+use App\Models\KategoriMakanan;
 use App\Models\Makanan;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -14,15 +15,15 @@ class MakananResource extends Resource
 {
     protected static ?string $model = Makanan::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cake';
-
-    protected static ?string $navigationGroup = 'Meal Planner';
+    protected static ?string $navigationIcon = 'heroicon-o-sparkles';
 
     protected static ?string $navigationLabel = 'Makanan';
 
     protected static ?string $modelLabel = 'Makanan';
 
     protected static ?string $pluralModelLabel = 'Makanan';
+
+    protected static ?string $navigationGroup = 'Master Data';
 
     protected static ?int $navigationSort = 2;
 
@@ -31,71 +32,82 @@ class MakananResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make('Informasi Makanan')
+                    ->description('Data utama makanan yang digunakan pada meal plan dan rekomendasi menu.')
                     ->schema([
                         Forms\Components\Select::make('kategori_makanan_id')
                             ->label('Kategori Makanan')
-                            ->relationship('kategori', 'nama')
+                            ->options(fn () => KategoriMakanan::query()->pluck('nama', 'id')->toArray())
                             ->searchable()
                             ->preload()
-                            ->native(false)
                             ->required(),
 
                         Forms\Components\TextInput::make('nama')
                             ->label('Nama Makanan')
+                            ->placeholder('Contoh: Nasi Merah Ayam Panggang')
                             ->required()
                             ->maxLength(255),
 
                         Forms\Components\Textarea::make('deskripsi')
                             ->label('Deskripsi')
+                            ->placeholder('Tuliskan deskripsi singkat makanan.')
                             ->rows(4)
-                            ->nullable()
-                            ->columnSpanFull(),
-
-                        Forms\Components\FileUpload::make('gambar')
-                            ->label('Gambar')
-                            ->image()
-                            ->directory('makanan')
-                            ->imageEditor()
-                            ->nullable()
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
 
                 Forms\Components\Section::make('Informasi Nutrisi')
+                    ->description('Masukkan nilai nutrisi per satu porsi makanan.')
                     ->schema([
                         Forms\Components\TextInput::make('kalori')
                             ->label('Kalori')
                             ->numeric()
-                            ->default(0)
+                            ->required()
                             ->minValue(0)
-                            ->suffix('kkal')
-                            ->required(),
+                            ->suffix('kkal'),
 
                         Forms\Components\TextInput::make('protein')
                             ->label('Protein')
                             ->numeric()
-                            ->default(0)
+                            ->required()
                             ->minValue(0)
-                            ->suffix('gram')
-                            ->required(),
+                            ->suffix('gram'),
 
                         Forms\Components\TextInput::make('karbohidrat')
                             ->label('Karbohidrat')
                             ->numeric()
-                            ->default(0)
+                            ->required()
                             ->minValue(0)
-                            ->suffix('gram')
-                            ->required(),
+                            ->suffix('gram'),
 
                         Forms\Components\TextInput::make('lemak')
                             ->label('Lemak')
                             ->numeric()
-                            ->default(0)
+                            ->required()
                             ->minValue(0)
-                            ->suffix('gram')
-                            ->required(),
+                            ->suffix('gram'),
                     ])
                     ->columns(4),
+
+                Forms\Components\Section::make('Pengaturan Rekomendasi')
+                    ->description('Atur apakah makanan ini akan muncul sebagai rekomendasi di dashboard user.')
+                    ->schema([
+                        Forms\Components\Toggle::make('is_recommended')
+                            ->label('Jadikan Menu Rekomendasi')
+                            ->helperText('Aktifkan agar makanan ini muncul pada bagian Rekomendasi Menu Sehat.')
+                            ->default(false),
+
+                        Forms\Components\Toggle::make('is_public')
+                            ->label('Tampilkan untuk Semua User')
+                            ->helperText('Aktifkan agar makanan ini bisa dilihat oleh semua user.')
+                            ->default(true),
+
+                        Forms\Components\Textarea::make('recommended_note')
+                            ->label('Catatan Rekomendasi')
+                            ->placeholder('Contoh: Cocok untuk sarapan tinggi protein dan rendah lemak.')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
             ]);
     }
 
@@ -103,16 +115,12 @@ class MakananResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('gambar')
-                    ->label('Gambar')
-                    ->square(),
-
                 Tables\Columns\TextColumn::make('nama')
                     ->label('Nama Makanan')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('kategori.nama')
+                Tables\Columns\TextColumn::make('kategoriMakanan.nama')
                     ->label('Kategori')
                     ->searchable()
                     ->sortable(),
@@ -128,7 +136,7 @@ class MakananResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('karbohidrat')
-                    ->label('Karbohidrat')
+                    ->label('Karbo')
                     ->suffix(' g')
                     ->sortable(),
 
@@ -137,24 +145,32 @@ class MakananResource extends Resource
                     ->suffix(' g')
                     ->sortable(),
 
+                Tables\Columns\IconColumn::make('is_recommended')
+                    ->label('Rekomendasi')
+                    ->boolean()
+                    ->sortable(),
+
+                Tables\Columns\IconColumn::make('is_public')
+                    ->label('Publik')
+                    ->boolean()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime('d M Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Diubah')
-                    ->dateTime('d M Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\TernaryFilter::make('is_recommended')
+                    ->label('Menu Rekomendasi'),
+
+                Tables\Filters\TernaryFilter::make('is_public')
+                    ->label('Menu Publik'),
+
                 Tables\Filters\SelectFilter::make('kategori_makanan_id')
-                    ->label('Kategori Makanan')
-                    ->relationship('kategori', 'nama')
-                    ->searchable()
-                    ->preload(),
+                    ->label('Kategori')
+                    ->options(fn () => KategoriMakanan::query()->pluck('nama', 'id')->toArray()),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -165,9 +181,7 @@ class MakananResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->emptyStateHeading('Belum ada data makanan')
-            ->emptyStateDescription('Tambahkan data makanan untuk digunakan pada meal plan.')
-            ->emptyStateIcon('heroicon-o-cake');
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array

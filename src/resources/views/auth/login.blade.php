@@ -1,269 +1,253 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="id">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - {{ $siteSetting->site_name }}</title>
 
-    <title>Login - Meal Planner</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link
+        href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap"
+        rel="stylesheet"
+    >
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
         * {
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #f472b6;
-            --primary-dark: #db2777;
-            --secondary: #fb7185;
-            --soft-pink: #fff1f7;
-            --soft-green: #dcfce7;
-            --soft-border: #fbcfe8;
-            --text: #111827;
-            --muted: #64748b;
-            --border: #f3d7e5;
-            --card: #ffffff;
-            --danger: #dc2626;
-            --success: #166534;
-        }
-
         body {
             margin: 0;
             min-height: 100vh;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            color: var(--text);
+            font-family: Figtree, ui-sans-serif, system-ui, -apple-system,
+                BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #171827;
             background:
-                radial-gradient(circle at 12% 12%, rgba(252, 231, 243, 0.9), transparent 32%),
-                radial-gradient(circle at 88% 10%, rgba(255, 228, 230, 0.75), transparent 28%),
-                radial-gradient(circle at 50% 100%, rgba(220, 252, 231, 0.55), transparent 32%),
-                linear-gradient(135deg, #fff7fb 0%, #fffafe 48%, #ffffff 100%);
-        }
-
-        a {
-            color: inherit;
-        }
-
-        button,
-        input {
-            font-family: inherit;
-        }
-
-        .auth-page {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 34px 22px;
+                radial-gradient(
+                    circle at 88% 12%,
+                    rgba(236, 111, 159, .16),
+                    transparent 32%
+                ),
+                radial-gradient(
+                    circle at 12% 92%,
+                    rgba(114, 184, 139, .14),
+                    transparent 30%
+                ),
+                #fff9fc;
         }
 
         .auth-shell {
-            width: 100%;
-            max-width: 1080px;
+            min-height: 100vh;
             display: grid;
-            grid-template-columns: 0.95fr 1.05fr;
-            border-radius: 34px;
-            background: rgba(255, 255, 255, 0.72);
-            border: 1px solid rgba(244, 114, 182, 0.18);
-            box-shadow: 0 28px 70px rgba(244, 114, 182, 0.15);
-            overflow: hidden;
-            backdrop-filter: blur(18px);
+            grid-template-columns: minmax(0, 1fr) minmax(520px, 1fr);
         }
 
-        .auth-hero {
+        .auth-visual {
             position: relative;
-            min-height: 620px;
-            padding: 42px;
-            background:
-                radial-gradient(circle at 20% 18%, rgba(252, 231, 243, 0.9), transparent 30%),
-                radial-gradient(circle at 82% 34%, rgba(220, 252, 231, 0.85), transparent 28%),
-                linear-gradient(160deg, #fff1f7 0%, #fff7ed 100%);
-            border-right: 1px solid rgba(244, 114, 182, 0.16);
+            overflow: hidden;
+            min-height: 100vh;
+            padding: 44px 48px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            overflow: hidden;
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(40, 22, 30, .68),
+                    rgba(40, 22, 30, .32)
+                ),
+                linear-gradient(
+                    180deg,
+                    rgba(40, 22, 30, .10),
+                    rgba(40, 22, 30, .56)
+                ),
+                url("{{ $siteSetting->auth_background_url }}");
+            background-size: cover;
+            background-position: center;
+        }
+
+        .auth-visual::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(
+                    circle at 15% 15%,
+                    rgba(236, 111, 159, .22),
+                    transparent 32%
+                ),
+                radial-gradient(
+                    circle at 85% 85%,
+                    rgba(114, 184, 139, .18),
+                    transparent 34%
+                );
+            pointer-events: none;
         }
 
         .brand {
-            display: inline-flex;
+            position: relative;
+            z-index: 1;
+            display: flex;
             align-items: center;
-            gap: 12px;
-            text-decoration: none;
+            gap: 20px;
+            color: #ffffff;
         }
 
-        .brand-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 18px;
+        .brand-logo {
+            width: 92px;
+            height: 92px;
+            flex: 0 0 auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #f9a8d4, #fb7185);
+            padding: 0;
+            overflow: hidden;
+            border: 4px solid rgba(255, 255, 255, .92);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .96);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, .18);
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .brand-name {
+            margin: 0;
             color: #ffffff;
-            font-size: 25px;
-            box-shadow: 0 16px 30px rgba(244, 114, 182, 0.28);
-        }
-
-        .brand-text {
-            font-size: 24px;
-            line-height: 1;
+            font-size: 30px;
+            line-height: 1.05;
             font-weight: 950;
-            color: #be185d;
-            letter-spacing: -0.04em;
+            letter-spacing: -.9px;
+            text-shadow: 0 8px 24px rgba(0, 0, 0, .18);
         }
 
-        .hero-content {
+        .brand-subtitle {
+            margin-top: 8px;
+            color: rgba(255, 255, 255, .92);
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .hero-copy {
             position: relative;
-            z-index: 2;
+            z-index: 1;
+            max-width: 680px;
+            padding-bottom: clamp(28px, 5vh, 72px);
         }
 
         .hero-badge {
             display: inline-flex;
             align-items: center;
-            gap: 9px;
-            min-height: 42px;
-            padding: 0 15px;
+            gap: 10px;
+            min-height: 44px;
+            margin-bottom: 28px;
+            padding: 10px 18px;
+            border: 1px solid rgba(255, 255, 255, .28);
             border-radius: 999px;
-            background: #ffffff;
-            border: 1px solid rgba(244, 114, 182, 0.20);
-            color: #be185d;
+            color: #ffffff;
+            background: rgba(255, 255, 255, .16);
+            backdrop-filter: blur(14px);
             font-size: 13px;
             font-weight: 950;
-            margin-bottom: 18px;
-            box-shadow: 0 12px 24px rgba(244, 114, 182, 0.10);
+            letter-spacing: .2px;
+            text-transform: uppercase;
         }
 
         .hero-title {
+            max-width: 640px;
             margin: 0;
-            font-size: 48px;
-            line-height: 1.05;
+            color: #ffffff;
+            font-size: clamp(42px, 5vw, 72px);
+            line-height: 1.03;
             font-weight: 950;
-            letter-spacing: -0.06em;
-            color: #111827;
+            letter-spacing: -3.2px;
+            text-shadow: 0 14px 32px rgba(0, 0, 0, .26);
         }
 
-        .hero-text {
-            margin: 18px 0 0;
-            max-width: 410px;
-            color: #64748b;
-            font-size: 17px;
-            line-height: 1.65;
+        .hero-description {
+            max-width: 640px;
+            margin: 28px 0 0;
+            color: rgba(255, 255, 255, .93);
+            font-size: clamp(16px, 1.5vw, 20px);
+            line-height: 1.75;
             font-weight: 700;
+            text-shadow: 0 10px 26px rgba(0, 0, 0, .22);
         }
 
-        .hero-feature-list {
+        .auth-content {
+            min-height: 100vh;
             display: grid;
-            gap: 12px;
-            margin-top: 28px;
+            place-items: center;
+            padding: 48px 28px;
         }
 
-        .hero-feature {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #334155;
-            font-size: 15px;
-            font-weight: 850;
-        }
-
-        .hero-feature-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #ffffff;
-            border: 1px solid rgba(244, 114, 182, 0.16);
-        }
-
-        .hero-illustration {
-            position: relative;
-            z-index: 2;
-            height: 230px;
-            border-radius: 30px;
-            background:
-                radial-gradient(circle at 20% 24%, rgba(252, 231, 243, 0.95), transparent 30%),
-                radial-gradient(circle at 78% 25%, rgba(220, 252, 231, 0.9), transparent 30%),
-                linear-gradient(135deg, #ffffff, #fff7fb);
-            border: 1px solid rgba(244, 114, 182, 0.16);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .hero-bunny-image {
-            width: 220px;
-            height: 220px;
-            object-fit: contain;
-            display: block;
-            filter: drop-shadow(0 18px 24px rgba(244, 114, 182, 0.18));
-        }
-
-        .auth-main {
-            padding: 54px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.64);
-        }
-
-        .auth-form-wrapper {
+        .auth-card {
             width: 100%;
-            max-width: 460px;
+            max-width: 610px;
+            padding: 48px;
+            border: 1px solid rgba(236, 111, 159, .18);
+            border-radius: 34px;
+            background: rgba(255, 255, 255, .92);
+            box-shadow: 0 24px 80px rgba(217, 79, 132, .16);
         }
 
-        .auth-header {
-            margin-bottom: 28px;
+        .auth-icon {
+            width: 76px;
+            height: 76px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 30px;
+            border-radius: 28px;
+            color: #e24f8c;
+            background: #fff0f6;
+            font-size: 32px;
         }
 
         .auth-title {
             margin: 0;
-            font-size: 42px;
-            line-height: 1.08;
+            color: #171827;
+            font-size: clamp(32px, 4vw, 42px);
+            line-height: 1.05;
             font-weight: 950;
-            color: #111827;
-            letter-spacing: -0.055em;
+            letter-spacing: -1.8px;
         }
 
         .auth-subtitle {
-            margin: 12px 0 0;
-            color: #64748b;
+            margin: 16px 0 32px;
+            color: #6b7084;
             font-size: 16px;
-            line-height: 1.55;
+            line-height: 1.65;
             font-weight: 700;
         }
 
-        .auth-card {
-            background: rgba(255, 255, 255, 0.94);
-            border: 1px solid rgba(244, 114, 182, 0.18);
-            border-radius: 28px;
-            box-shadow: 0 18px 42px rgba(244, 114, 182, 0.10);
-            padding: 30px;
-        }
-
+        .alert-error,
         .alert-success {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             padding: 14px 16px;
-            border-radius: 16px;
-            background: #dcfce7;
-            border: 1px solid #bbf7d0;
-            color: #166534;
-            font-size: 14px;
-            font-weight: 850;
+            border-radius: 18px;
+            font-size: 13px;
+            font-weight: 800;
         }
 
         .alert-error {
-            margin-bottom: 20px;
-            padding: 14px 16px;
-            border-radius: 16px;
-            background: #fee2e2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
-            font-size: 14px;
-            font-weight: 850;
+            border: 1px solid #ffd2df;
+            color: #c72f5d;
+            background: #fff0f4;
+        }
+
+        .alert-success {
+            border: 1px solid #b7efc5;
+            color: #2f7d4d;
+            background: #f0fff5;
         }
 
         .form-group {
@@ -273,375 +257,538 @@
         .form-label {
             display: block;
             margin-bottom: 9px;
-            color: #334155;
-            font-size: 15px;
+            color: #161827;
+            font-size: 14px;
             font-weight: 950;
+        }
+
+        .input-wrap {
+            position: relative;
         }
 
         .form-input {
             width: 100%;
-            height: 58px;
-            padding: 0 18px;
-            border: 1px solid #f3d7e5;
-            border-radius: 18px;
-            background: #ffffff;
-            color: #111827;
-            font-size: 16px;
-            font-weight: 750;
+            min-height: 64px;
+            padding: 0 58px;
+            border: 1px solid #ead7df;
+            border-radius: 999px;
             outline: none;
-            transition: all 0.2s ease;
-        }
-
-        .form-input:focus {
-            border-color: #f472b6;
-            box-shadow: 0 0 0 5px rgba(244, 114, 182, 0.14);
+            color: #202231;
+            background: rgba(255, 255, 255, .9);
+            font-size: 15px;
+            font-weight: 800;
+            transition: .2s ease;
         }
 
         .form-input::placeholder {
-            color: #94a3b8;
-            font-weight: 650;
+            color: #aaa2ae;
         }
 
-        .error-text {
-            margin: 8px 0 0;
-            color: #dc2626;
-            font-size: 13px;
-            font-weight: 850;
+        .form-input:focus {
+            border-color: #ec6f9f;
+            box-shadow: 0 0 0 5px rgba(236, 111, 159, .12);
         }
 
-        .form-options {
+        .input-icon {
+            position: absolute;
+            top: 50%;
+            left: 22px;
+            transform: translateY(-50%);
+            color: #aaa2ae;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .input-right {
+            position: absolute;
+            top: 50%;
+            right: 22px;
+            transform: translateY(-50%);
+            color: #aaa2ae;
+            font-size: 16px;
+            pointer-events: none;
+        }
+
+        .password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            padding: 0;
+            transform: translateY(-50%);
+            border: 0;
+            border-radius: 999px;
+            color: #dc3f82;
+            background: #fff4f8;
+            cursor: pointer;
+            font-size: 15px;
+            transition: .2s ease;
+        }
+
+        .password-toggle:hover {
+            background: #ffe4ef;
+            transform: translateY(-50%) scale(1.04);
+        }
+
+        .form-error {
+            display: block;
+            margin-top: 8px;
+            color: #c72f5d;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .auth-options {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 16px;
-            margin: 2px 0 24px;
+            gap: 14px;
+            margin: 8px 0 28px;
+            color: #6b7084;
+            font-size: 13px;
+            font-weight: 800;
         }
 
-        .remember-label {
+        .remember {
             display: inline-flex;
             align-items: center;
             gap: 9px;
-            color: #475569;
+        }
+
+        .remember input {
+            width: 17px;
+            height: 17px;
+            accent-color: #ec6f9f;
+        }
+
+        .forgot-link {
+            color: #e24f8c;
+            text-decoration: none;
+            font-weight: 950;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-primary {
+            width: 100%;
+            min-height: 66px;
+            border: 0;
+            border-radius: 999px;
+            color: #ffffff;
+            background: linear-gradient(135deg, #ec6f9f, #dc3f82);
+            box-shadow: 0 18px 34px rgba(220, 63, 130, .24);
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: 950;
+            transition: .2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 22px 42px rgba(220, 63, 130, .3);
+        }
+
+        .btn-google {
+            width: 100%;
+            min-height: 62px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border: 1px solid #ead7df;
+            border-radius: 999px;
+            color: #262837;
+            background: #ffffff;
+            box-shadow: 0 12px 26px rgba(37, 44, 39, .06);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 950;
+            transition: .2s ease;
+        }
+
+        .btn-google:hover {
+            transform: translateY(-1px);
+            border-color: rgba(236, 111, 159, .42);
+            box-shadow: 0 16px 32px rgba(217, 79, 132, .12);
+        }
+
+        .auth-google-after {
+            margin-top: 14px;
+        }
+
+        .google-mark {
+            width: 30px;
+            height: 30px;
+            display: grid;
+            place-items: center;
+            border: 1px solid #eeeeee;
+            border-radius: 999px;
+            color: #4285f4;
+            background: #ffffff;
+            font-family: Arial, sans-serif;
+            font-size: 17px;
+            font-weight: 950;
+        }
+
+        .auth-switch {
+            margin: 28px 0 0;
+            color: #6b7084;
+            text-align: center;
             font-size: 14px;
             font-weight: 800;
-            cursor: pointer;
         }
 
-        .remember-checkbox {
-            width: 18px;
-            height: 18px;
-            border-radius: 6px;
-            accent-color: #f472b6;
-        }
-
-        .auth-link {
-            color: #db2777;
-            font-size: 14px;
-            font-weight: 950;
+        .auth-switch a {
+            color: #e24f8c;
             text-decoration: none;
-        }
-
-        .auth-link:hover {
-            text-decoration: underline;
-        }
-
-        .auth-button {
-            width: 100%;
-            height: 56px;
-            border: none;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #f472b6, #fb7185);
-            color: #ffffff;
-            font-size: 16px;
             font-weight: 950;
-            cursor: pointer;
-            box-shadow: 0 14px 26px rgba(244, 114, 182, 0.24);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .auth-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 34px rgba(244, 114, 182, 0.30);
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 34px;
         }
 
-        .auth-footer-text {
-            margin: 22px 0 0;
-            text-align: center;
-            color: #64748b;
-            font-size: 14px;
-            font-weight: 750;
+        .info-card {
+            display: flex;
+            gap: 13px;
+            padding: 18px;
+            border: 1px solid #f4d9e3;
+            border-radius: 20px;
+            background: #fff9fc;
         }
 
-        .auth-footer-text a {
-            color: #db2777;
+        .info-icon {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            border-radius: 16px;
+            color: #e24f8c;
+            background: #fff0f6;
+            font-size: 18px;
+        }
+
+        .info-icon.green {
+            color: #3f8f61;
+            background: #edf9f0;
+        }
+
+        .info-title {
+            margin: 0 0 4px;
+            color: #232638;
+            font-size: 13px;
             font-weight: 950;
-            text-decoration: none;
         }
 
-        .auth-footer-text a:hover {
-            text-decoration: underline;
+        .info-text {
+            margin: 0;
+            color: #6b7084;
+            font-size: 12px;
+            line-height: 1.45;
+            font-weight: 800;
         }
 
-        .copyright {
-            margin-top: 24px;
-            text-align: center;
-            color: #94a3b8;
-            font-size: 14px;
-            font-weight: 750;
-        }
-
-        @media (max-width: 980px) {
+        @media (max-width: 1180px) {
             .auth-shell {
                 grid-template-columns: 1fr;
-                max-width: 560px;
             }
 
-            .auth-hero {
+            .auth-visual {
+                min-height: 520px;
+            }
+
+            .auth-content {
                 min-height: auto;
-                padding: 30px;
-                gap: 28px;
-                border-right: none;
-                border-bottom: 1px solid rgba(244, 114, 182, 0.16);
-            }
-
-            .hero-title {
-                font-size: 38px;
-            }
-
-            .hero-illustration {
-                height: 190px;
-            }
-
-            .hero-bunny-image {
-                width: 180px;
-                height: 180px;
-            }
-
-            .auth-main {
-                padding: 30px;
             }
         }
 
-        @media (max-width: 620px) {
-            .auth-page {
-                padding: 18px;
-                align-items: flex-start;
+        @media (max-width: 720px) {
+            .auth-visual {
+                min-height: 460px;
+                padding: 26px;
             }
 
-            .auth-shell {
-                border-radius: 26px;
+            .brand {
+                gap: 14px;
             }
 
-            .auth-hero {
-                padding: 24px;
+            .brand-logo {
+                width: 72px;
+                height: 72px;
+                border-width: 3px;
+            }
+
+            .brand-name {
+                font-size: 22px;
+            }
+
+            .brand-subtitle {
+                font-size: 13px;
             }
 
             .hero-title {
-                font-size: 32px;
+                font-size: clamp(34px, 12vw, 52px);
+                letter-spacing: -2px;
             }
 
-            .hero-text {
+            .hero-description {
                 font-size: 15px;
+                line-height: 1.65;
             }
 
-            .hero-feature-list {
-                gap: 10px;
-            }
-
-            .auth-main {
-                padding: 24px;
+            .auth-content {
+                padding: 22px 16px;
             }
 
             .auth-card {
-                padding: 24px;
-                border-radius: 24px;
+                padding: 28px 20px;
+                border-radius: 28px;
             }
 
-            .auth-title {
-                font-size: 34px;
+            .info-grid {
+                grid-template-columns: 1fr;
             }
 
-            .form-options {
+            .auth-options {
                 align-items: flex-start;
                 flex-direction: column;
-            }
-
-            .hero-illustration {
-                height: 160px;
-            }
-
-            .hero-bunny-image {
-                width: 150px;
-                height: 150px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="auth-page">
-        <div class="auth-shell">
-            <aside class="auth-hero">
-                <a href="{{ route('login') }}" class="brand">
-                    <div class="brand-icon">
-                        🐰
-                    </div>
-
-                    <div class="brand-text">
-                        Meal Planner
-                    </div>
-                </a>
-
-                <div class="hero-content">
-                    <div class="hero-badge">
-                        🌸 Cute Pastel Dashboard
-                    </div>
-
-                    <h1 class="hero-title">
-                        Atur makan sehat dengan tampilan yang manis.
-                    </h1>
-
-                    <p class="hero-text">
-                        Login untuk melihat target kalori, jadwal makan, daftar belanja, dan progress harian kamu.
-                    </p>
-
-                    <div class="hero-feature-list">
-                        <div class="hero-feature">
-                            <span class="hero-feature-icon">🎯</span>
-                            Target kalori harian lebih mudah dipantau
-                        </div>
-
-                        <div class="hero-feature">
-                            <span class="hero-feature-icon">🍓</span>
-                            Simpan menu makanan favorit
-                        </div>
-
-                        <div class="hero-feature">
-                            <span class="hero-feature-icon">🛒</span>
-                            Generate daftar belanja dari meal plan
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hero-illustration">
+    <main class="auth-shell">
+        <section class="auth-visual">
+            <div class="brand">
+                <div class="brand-logo">
                     <img
-                        src="{{ asset('images/kelinci-stroberi.png') }}"
-                        alt="Kelinci imut memegang stroberi"
-                        class="hero-bunny-image"
+                        src="{{ $siteSetting->logo_url }}"
+                        alt="Logo {{ $siteSetting->site_name }}"
                     >
                 </div>
-            </aside>
 
-            <main class="auth-main">
-                <div class="auth-form-wrapper">
-                    <div class="auth-header">
-                        <h2 class="auth-title">
-                            Selamat Datang 👋
-                        </h2>
+                <div>
+                    <h1 class="brand-name">
+                        {{ $siteSetting->site_name }}
+                    </h1>
 
-                        <p class="auth-subtitle">
-                            Masuk ke akun kamu untuk melanjutkan mengelola Meal Planner.
-                        </p>
-                    </div>
-
-                    <div class="auth-card">
-                        @if (session()->has('success'))
-                            <div class="alert-success">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-
-                        @if ($errors->has('email'))
-                            <div class="alert-error">
-                                {{ $errors->first('email') }}
-                            </div>
-                        @endif
-
-                        <form method="POST" action="{{ route('login.store') }}">
-                            @csrf
-
-                            <div class="form-group">
-                                <label for="email" class="form-label">
-                                    Email
-                                </label>
-
-                                <input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    value="{{ old('email') }}"
-                                    class="form-input"
-                                    placeholder="email@example.com"
-                                    autocomplete="email"
-                                    required
-                                    autofocus
-                                >
-
-                                @error('email')
-                                    <p class="error-text">
-                                        {{ $message }}
-                                    </p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="password" class="form-label">
-                                    Password
-                                </label>
-
-                                <input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    class="form-input"
-                                    placeholder="Masukkan password"
-                                    autocomplete="current-password"
-                                    required
-                                >
-
-                                @error('password')
-                                    <p class="error-text">
-                                        {{ $message }}
-                                    </p>
-                                @enderror
-                            </div>
-
-                            <div class="form-options">
-                                <label class="remember-label" for="remember">
-                                    <input
-                                        id="remember"
-                                        type="checkbox"
-                                        name="remember"
-                                        value="1"
-                                        class="remember-checkbox"
-                                    >
-
-                                    Ingat saya
-                                </label>
-
-                                <a href="{{ route('register') }}" class="auth-link">
-                                    Daftar akun
-                                </a>
-                            </div>
-
-                            <button type="submit" class="auth-button">
-                                Login
-                            </button>
-                        </form>
-
-                        <p class="auth-footer-text">
-                            Belum punya akun?
-                            <a href="{{ route('register') }}">
-                                Buat akun sekarang
-                            </a>
-                        </p>
-                    </div>
-
-                    <div class="copyright">
-                        © {{ date('Y') }} Meal Planner
+                    <div class="brand-subtitle">
+                        {{ $siteSetting->site_subtitle }}
                     </div>
                 </div>
-            </main>
-        </div>
-    </div>
+            </div>
+
+            <div class="hero-copy">
+                <div class="hero-badge">
+                    <span>🌿</span>
+                    <span>Hidup Lebih Sehat</span>
+                </div>
+
+                <h2 class="hero-title">
+                    Transformasi Kesehatan Dimulai dari Piring Anda
+                </h2>
+
+                <p class="hero-description">
+                    Kelola rencana nutrisi harian dengan presisi berbasis data
+                    untuk mencapai target kesehatan Anda dengan lebih mudah
+                    dan menyenangkan.
+                </p>
+            </div>
+        </section>
+
+        <section class="auth-content">
+            <div class="auth-card">
+                <div class="auth-icon">♡</div>
+
+                <h2 class="auth-title">
+                    Selamat Datang Kembali
+                </h2>
+
+                <p class="auth-subtitle">
+                    Silakan masuk untuk melanjutkan perjalanan sehat Anda dan
+                    memantau perkembangan nutrisi harian.
+                </p>
+
+                @if (session('status'))
+                    <div class="alert-success">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
+                @if ($errors->any())
+                    <div class="alert-error">
+                        Login belum berhasil. Silakan periksa kembali data yang
+                        Anda masukkan.
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('login.store') }}">
+                    @csrf
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">
+                            Email
+                        </label>
+
+                        <div class="input-wrap">
+                            <span class="input-icon">✉</span>
+
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                class="form-input"
+                                placeholder="nama@email.com"
+                                autocomplete="email"
+                                autofocus
+                                required
+                            >
+
+                            <span class="input-right">⌘</span>
+                        </div>
+
+                        @error('email')
+                            <span class="form-error">
+                                {{ $message }}
+                            </span>
+                        @enderror
+
+                        @error('google')
+                            <span class="form-error">
+                                {{ $message }}
+                            </span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">
+                            Password
+                        </label>
+
+                        <div class="input-wrap">
+                            <span class="input-icon">⌕</span>
+
+                            <input
+                                id="password"
+                                type="password"
+                                name="password"
+                                class="form-input"
+                                placeholder="Masukkan kata sandi"
+                                autocomplete="current-password"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                onclick="togglePassword('password', this)"
+                                aria-label="Tampilkan atau sembunyikan password"
+                            >
+                                👁
+                            </button>
+                        </div>
+
+                        @error('password')
+                            <span class="form-error">
+                                {{ $message }}
+                            </span>
+                        @enderror
+                    </div>
+
+                    <div class="auth-options">
+                        <label class="remember">
+                            <input
+                                type="checkbox"
+                                name="remember"
+                                value="1"
+                                @checked(old('remember'))
+                            >
+
+                            <span>Ingat saya</span>
+                        </label>
+
+                        <a
+                            href="{{ route('password.request') }}"
+                            class="forgot-link"
+                        >
+                            Lupa password?
+                        </a>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Masuk →
+                    </button>
+
+                    <a
+                        href="{{ route('google.redirect') }}"
+                        class="btn-google auth-google-after"
+                    >
+                        <span class="google-mark">G</span>
+                        <span>Masuk dengan Google</span>
+                    </a>
+                </form>
+
+                <p class="auth-switch">
+                    Belum punya akun?
+                    <a href="{{ route('register') }}">
+                        Daftar sekarang
+                    </a>
+                </p>
+
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-icon">♧</div>
+
+                        <div>
+                            <p class="info-title">User Baru</p>
+
+                            <p class="info-text">
+                                Daftar akun dan isi data tubuh untuk menghitung
+                                kalori otomatis.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-icon green">♡</div>
+
+                        <div>
+                            <p class="info-title">Admin</p>
+
+                            <p class="info-text">
+                                Admin dapat mengelola makanan, user, meal plan,
+                                dan bahan makanan.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+
+            if (!input) {
+                return;
+            }
+
+            const isHidden = input.type === 'password';
+
+            input.type = isHidden ? 'text' : 'password';
+            button.textContent = isHidden ? '🙈' : '👁';
+        }
+    </script>
 </body>
 </html>

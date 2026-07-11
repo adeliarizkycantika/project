@@ -1,0 +1,38 @@
+<?php
+namespace App\Filament\Admin\Resources\BahanMakananResource\Api\Handlers;
+
+use Illuminate\Http\Request;
+use Rupadana\ApiService\Http\Handlers;
+use App\Filament\Admin\Resources\BahanMakananResource;
+use App\Filament\Admin\Resources\BahanMakananResource\Api\Requests\CreateBahanMakananRequest;
+
+class CreateHandler extends Handlers {
+    public static string | null $uri = '/';
+    public static string | null $resource = BahanMakananResource::class;
+
+    public static function getMethod()
+    {
+        return Handlers::POST;
+    }
+
+    public static function getModel() {
+        return static::$resource::getModel();
+    }
+
+    /**
+     * Create BahanMakanan
+     *
+     * @param CreateBahanMakananRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function handler(CreateBahanMakananRequest $request)
+    {
+        $model = new (static::getModel());
+
+        $model->fill($request->all());
+
+        $model->save();
+
+        return static::sendSuccessResponse($model, "Successfully Create Resource");
+    }
+}

@@ -2,90 +2,176 @@
 
 namespace Database\Seeders;
 
-use App\Models\KategoriMakanan;
-use App\Models\Makanan;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class MakananSeeder extends Seeder
 {
     public function run(): void
     {
-        $kategoriSarapan = KategoriMakanan::where('nama', 'Sarapan')->first();
-        $kategoriMakanSiang = KategoriMakanan::where('nama', 'Makan Siang')->first();
-        $kategoriMakanMalam = KategoriMakanan::where('nama', 'Makan Malam')->first();
-        $kategoriSnack = KategoriMakanan::where('nama', 'Snack')->first();
-        $kategoriMinuman = KategoriMakanan::where('nama', 'Minuman')->first();
-
-        if (
-            ! $kategoriSarapan ||
-            ! $kategoriMakanSiang ||
-            ! $kategoriMakanMalam ||
-            ! $kategoriSnack ||
-            ! $kategoriMinuman
-        ) {
+        if (! Schema::hasTable('makanan')) {
             return;
         }
 
+        $kategoriTable = $this->getKategoriTable();
+
+        if (! $kategoriTable) {
+            return;
+        }
+
+        $kategoriId = $this->getOrCreateKategoriId($kategoriTable);
+
+        if (! $kategoriId) {
+            return;
+        }
+
+        $now = now();
+
         $data = [
             [
-                'kategori_makanan_id' => $kategoriSarapan->id,
-                'nama' => 'Oatmeal Pisang',
-                'deskripsi' => 'Menu sarapan sehat dengan oat, pisang, dan susu rendah lemak.',
-                'kalori' => 250,
-                'protein' => 7,
-                'karbohidrat' => 60,
-                'lemak' => 3,
-                'gambar' => null,
-            ],
-            [
-                'kategori_makanan_id' => $kategoriMakanSiang->id,
                 'nama' => 'Nasi Merah Ayam Panggang',
-                'deskripsi' => 'Menu makan siang tinggi protein dengan nasi merah dan ayam panggang.',
-                'kalori' => 650,
-                'protein' => 38,
-                'karbohidrat' => 70,
-                'lemak' => 18,
-                'gambar' => null,
+                'kategori_makanan_id' => $kategoriId,
+                'deskripsi' => 'Menu seimbang dengan sumber karbohidrat kompleks dan protein rendah lemak.',
+                'kalori' => 430,
+                'protein' => 32,
+                'karbohidrat' => 48,
+                'lemak' => 10,
+                'is_recommended' => true,
+                'is_public' => true,
+                'recommended_note' => 'Cocok untuk makan siang karena mengandung karbohidrat kompleks dan protein yang cukup.',
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
             [
-                'kategori_makanan_id' => $kategoriMakanMalam->id,
-                'nama' => 'Salad Sayur Telur',
-                'deskripsi' => 'Menu makan malam ringan dengan sayur segar dan telur rebus.',
-                'kalori' => 380,
-                'protein' => 18,
-                'karbohidrat' => 28,
-                'lemak' => 20,
-                'gambar' => null,
-            ],
-            [
-                'kategori_makanan_id' => $kategoriSnack->id,
-                'nama' => 'Greek Yogurt Buah',
-                'deskripsi' => 'Snack sehat dengan yogurt dan buah.',
-                'kalori' => 180,
+                'nama' => 'Oatmeal Pisang dan Susu Rendah Lemak',
+                'kategori_makanan_id' => $kategoriId,
+                'deskripsi' => 'Menu sarapan praktis dengan serat tinggi dan energi yang stabil.',
+                'kalori' => 320,
                 'protein' => 12,
-                'karbohidrat' => 25,
-                'lemak' => 4,
-                'gambar' => null,
+                'karbohidrat' => 55,
+                'lemak' => 7,
+                'is_recommended' => true,
+                'is_public' => true,
+                'recommended_note' => 'Cocok untuk sarapan karena tinggi serat dan membantu kenyang lebih lama.',
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
             [
-                'kategori_makanan_id' => $kategoriMinuman->id,
-                'nama' => 'Air Mineral',
-                'deskripsi' => 'Minuman bebas kalori untuk kebutuhan cairan harian.',
-                'kalori' => 0,
-                'protein' => 0,
-                'karbohidrat' => 0,
-                'lemak' => 0,
-                'gambar' => null,
+                'nama' => 'Telur Rebus dan Roti Gandum',
+                'kategori_makanan_id' => $kategoriId,
+                'deskripsi' => 'Kombinasi protein dan karbohidrat ringan untuk menu pagi atau cemilan sehat.',
+                'kalori' => 280,
+                'protein' => 18,
+                'karbohidrat' => 30,
+                'lemak' => 9,
+                'is_recommended' => true,
+                'is_public' => true,
+                'recommended_note' => 'Pilihan ringan untuk sarapan tinggi protein dengan kalori yang masih terkendali.',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'nama' => 'Sup Sayur Tahu',
+                'kategori_makanan_id' => $kategoriId,
+                'deskripsi' => 'Menu rendah kalori dengan sayuran dan protein nabati.',
+                'kalori' => 210,
+                'protein' => 14,
+                'karbohidrat' => 20,
+                'lemak' => 8,
+                'is_recommended' => true,
+                'is_public' => true,
+                'recommended_note' => 'Cocok untuk makan malam ringan karena rendah kalori dan tetap mengandung protein.',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'nama' => 'Greek Yogurt Buah',
+                'kategori_makanan_id' => $kategoriId,
+                'deskripsi' => 'Cemilan sehat dengan protein, serat, dan rasa segar dari buah.',
+                'kalori' => 190,
+                'protein' => 13,
+                'karbohidrat' => 24,
+                'lemak' => 5,
+                'is_recommended' => true,
+                'is_public' => true,
+                'recommended_note' => 'Cocok sebagai cemilan sehat di antara waktu makan utama.',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'nama' => 'Ikan Kukus Sayur Hijau',
+                'kategori_makanan_id' => $kategoriId,
+                'deskripsi' => 'Menu tinggi protein dengan lemak rendah dan tambahan sayuran hijau.',
+                'kalori' => 360,
+                'protein' => 35,
+                'karbohidrat' => 22,
+                'lemak' => 12,
+                'is_recommended' => true,
+                'is_public' => true,
+                'recommended_note' => 'Direkomendasikan untuk makan malam karena tinggi protein dan tidak terlalu berat.',
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
         ];
 
         foreach ($data as $item) {
-            Makanan::updateOrCreate(
+            DB::table('makanan')->updateOrInsert(
                 [
                     'nama' => $item['nama'],
                 ],
-                $item
+                $this->filterExistingColumns('makanan', $item)
             );
         }
+    }
+
+    private function getKategoriTable(): ?string
+    {
+        if (Schema::hasTable('kategori_makanan')) {
+            return 'kategori_makanan';
+        }
+
+        if (Schema::hasTable('kategori_makanans')) {
+            return 'kategori_makanans';
+        }
+
+        return null;
+    }
+
+    private function getOrCreateKategoriId(string $kategoriTable): ?int
+    {
+        $kategori = DB::table($kategoriTable)->first();
+
+        if ($kategori) {
+            return (int) $kategori->id;
+        }
+
+        $data = [
+            'nama' => 'Menu Sehat',
+            'deskripsi' => 'Kategori untuk menu makanan sehat.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        $insertData = $this->filterExistingColumns($kategoriTable, $data);
+
+        if (! array_key_exists('nama', $insertData)) {
+            return null;
+        }
+
+        return (int) DB::table($kategoriTable)->insertGetId($insertData);
+    }
+
+    private function filterExistingColumns(string $table, array $data): array
+    {
+        $filtered = [];
+
+        foreach ($data as $column => $value) {
+            if (Schema::hasColumn($table, $column)) {
+                $filtered[$column] = $value;
+            }
+        }
+
+        return $filtered;
     }
 }

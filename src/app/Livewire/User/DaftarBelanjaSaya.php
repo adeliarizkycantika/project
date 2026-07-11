@@ -3,309 +3,724 @@
 namespace App\Livewire\User;
 
 use App\Models\ItemDaftarBelanja;
-use App\Models\MealPlan;
-use App\Services\GenerateDaftarBelanjaService;
-use Illuminate\Support\Collection;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Computed;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithPagination;
+use Throwable;
 
-#[Layout('layouts.app')]
+#[Layout('layouts.user')]
 class DaftarBelanjaSaya extends Component
 {
-    public ?int $generateMealPlanId = null;
-
-    public ?string $selectedTanggalBelanja = null;
-
-    public string $selectedStatus = 'semua';
+    use WithPagination;
 
     public string $search = '';
 
+    public string $statusFilter = '';
+
+    public bool $showForm = false;
+
+    public ?int $editingId = null;
+
     public string $nama_item = '';
 
-    public ?string $jumlah = null;
+    public $jumlah = 1;
 
-    public ?string $satuan = null;
+    public string $satuan = 'pcs';
 
-    public string $tanggal_belanja = '';
+    public ?string $kategori = null;
 
-    public ?int $editingItemId = null;
+    public ?string $catatan = null;
+
+    public bool $sudah_dibeli = false;
+
+    protected string $paginationTheme = 'tailwind';
 
     public function mount(): void
     {
-        $this->tanggal_belanja = now()->format('Y-m-d');
-    }
-
-    public function tambahItemManual(): void
-    {
-        $validated = $this->validate([
-            'nama_item' => ['required', 'string', 'max:255'],
-            'jumlah' => ['nullable', 'numeric', 'min:0'],
-            'satuan' => ['nullable', 'string', 'max:50'],
-            'tanggal_belanja' => ['required', 'date'],
-        ]);
-
-        ItemDaftarBelanja::create([
-            'user_id' => $this->getUserId(),
-            'meal_plan_id' => null,
-            'tanggal_belanja' => $validated['tanggal_belanja'],
-            'bahan_makanan_id' => null,
-            'nama_item' => $validated['nama_item'],
-            'jumlah' => $validated['jumlah'] ?? null,
-            'satuan' => $validated['satuan'] ?? null,
-            'sudah_dibeli' => false,
-        ]);
-
-        $this->resetFormManual();
-
-        session()->flash('success', 'Item daftar belanja berhasil ditambahkan.');
-    }
-
-    public function editItem(int $itemId): void
-    {
-        $item = $this->getUserItemDaftarBelanja($itemId);
-
-        $this->editingItemId = $item->id;
-        $this->nama_item = $item->nama_item;
-        $this->jumlah = $item->jumlah !== null ? (string) $item->jumlah : null;
-        $this->satuan = $item->satuan;
-        $this->tanggal_belanja = $item->tanggal_belanja
-            ? $item->tanggal_belanja->format('Y-m-d')
-            : now()->format('Y-m-d');
-    }
-
-    public function updateItemManual(): void
-    {
-        if (! $this->editingItemId) {
-            session()->flash('warning', 'Tidak ada item yang sedang diedit.');
-
-            return;
-        }
-
-        $item = $this->getUserItemDaftarBelanja($this->editingItemId);
-
-        $validated = $this->validate([
-            'nama_item' => ['required', 'string', 'max:255'],
-            'jumlah' => ['nullable', 'numeric', 'min:0'],
-            'satuan' => ['nullable', 'string', 'max:50'],
-            'tanggal_belanja' => ['required', 'date'],
-        ]);
-
-        $item->update([
-            'nama_item' => $validated['nama_item'],
-            'jumlah' => $validated['jumlah'] ?? null,
-            'satuan' => $validated['satuan'] ?? null,
-            'tanggal_belanja' => $validated['tanggal_belanja'],
-        ]);
-
-        $this->resetFormManual();
-
-        session()->flash('success', 'Item daftar belanja berhasil diperbarui.');
-    }
-
-    public function cancelEditItem(): void
-    {
-        $this->resetFormManual();
-
-        session()->flash('success', 'Mode edit dibatalkan.');
-    }
-
-    public function generateDaftarBelanja(): void
-    {
-        if (! $this->generateMealPlanId) {
-            session()->flash('warning', 'Pilih meal plan terlebih dahulu.');
-
-            return;
-        }
-
-        $mealPlan = $this->getUserMealPlan($this->generateMealPlanId);
-
-        $jumlahItem = app(GenerateDaftarBelanjaService::class)->generate($mealPlan);
-
-        ItemDaftarBelanja::query()
-            ->where('user_id', $this->getUserId())
-            ->where('meal_plan_id', $mealPlan->id)
-            ->update([
-                'tanggal_belanja' => $mealPlan->tanggal_rencana,
-            ]);
-
-        if ($jumlahItem <= 0) {
-            session()->flash('warning', 'Daftar belanja tidak dibuat. Pastikan meal plan memiliki makanan dan bahan makanan.');
-
-            return;
-        }
-
-        $this->selectedTanggalBelanja = $mealPlan->tanggal_rencana->format('Y-m-d');
-
-        session()->flash('success', "Daftar belanja berhasil dibuat. Total {$jumlahItem} item belanja.");
-    }
-
-    public function toggleDibeli(int $itemId): void
-    {
-        $item = $this->getUserItemDaftarBelanja($itemId);
-
-        $item->update([
-            'sudah_dibeli' => ! $item->sudah_dibeli,
-        ]);
-
-        session()->flash('success', 'Status belanja berhasil diperbarui.');
-    }
-
-    public function deleteItem(int $itemId): void
-    {
-        $item = $this->getUserItemDaftarBelanja($itemId);
-
-        $item->delete();
-
-        if ($this->editingItemId === $itemId) {
-            $this->resetFormManual();
-        }
-
-        session()->flash('success', 'Item daftar belanja berhasil dihapus.');
-    }
-
-    public function clearCheckedItems(): void
-    {
-        $query = ItemDaftarBelanja::query()
-            ->where('user_id', $this->getUserId())
-            ->where('sudah_dibeli', true);
-
-        if ($this->selectedTanggalBelanja) {
-            $query->whereDate('tanggal_belanja', $this->selectedTanggalBelanja);
-        }
-
-        if ($this->search !== '') {
-            $query->where('nama_item', 'like', '%' . $this->search . '%');
-        }
-
-        $deletedCount = $query->delete();
-
-        if ($deletedCount <= 0) {
-            session()->flash('warning', 'Tidak ada item yang sudah dibeli untuk dibersihkan.');
-
-            return;
-        }
-
-        $this->resetFormManual();
-
-        session()->flash('success', "Berhasil menghapus {$deletedCount} item yang sudah dibeli.");
-    }
-
-    public function resetFilter(): void
-    {
-        $this->reset([
-            'selectedTanggalBelanja',
-            'search',
-        ]);
-
-        $this->selectedStatus = 'semua';
-    }
-
-    private function resetFormManual(): void
-    {
-        $this->reset([
-            'editingItemId',
-            'nama_item',
-            'jumlah',
-            'satuan',
-        ]);
-
-        $this->tanggal_belanja = now()->format('Y-m-d');
-    }
-
-    private function getUserId(): int
-    {
-        $userId = Auth::id();
-
-        if (! $userId) {
+        if (! Auth::check()) {
             abort(403);
         }
-
-        return (int) $userId;
     }
 
-    private function getUserMealPlan(int $mealPlanId): MealPlan
+    public function updatingSearch(): void
     {
-        return MealPlan::query()
-            ->where('user_id', $this->getUserId())
-            ->where('id', $mealPlanId)
-            ->firstOrFail();
+        $this->resetPage();
     }
 
-    private function getUserItemDaftarBelanja(int $itemId): ItemDaftarBelanja
+    public function updatingStatusFilter(): void
     {
-        return ItemDaftarBelanja::query()
-            ->where('user_id', $this->getUserId())
-            ->where('id', $itemId)
-            ->firstOrFail();
+        $this->resetPage();
     }
 
-    #[Computed]
-    public function mealPlans(): Collection
+    public function createItem(): void
     {
-        return MealPlan::query()
-            ->withCount([
-                'items',
-                'itemDaftarBelanja',
+        $this->resetForm();
+
+        $this->showForm = true;
+    }
+
+    public function editItem(int $id): void
+    {
+        $item = ItemDaftarBelanja::find($id);
+
+        if (! $item instanceof ItemDaftarBelanja) {
+            session()->flash('belanja_error', 'Item belanja tidak ditemukan.');
+            return;
+        }
+
+        if (! $this->canManageItem($item)) {
+            session()->flash('belanja_error', 'Kamu tidak memiliki akses untuk mengubah item ini.');
+            return;
+        }
+
+        $this->editingId = $item->id;
+        $this->showForm = true;
+
+        $this->nama_item = (string) ($this->getAttributeValue($item, [
+            'nama_item',
+            'nama_bahan',
+            'nama',
+            'item',
+            'bahan',
+        ]) ?? '');
+
+        $this->jumlah = $this->getAttributeValue($item, [
+            'jumlah',
+            'qty',
+            'quantity',
+            'kuantitas',
+        ]) ?? 1;
+
+        $this->satuan = (string) ($this->getAttributeValue($item, [
+            'satuan',
+            'unit',
+        ]) ?? 'pcs');
+
+        $this->kategori = $this->getAttributeValue($item, [
+            'kategori',
+            'kategori_belanja',
+            'category',
+        ]);
+
+        $this->catatan = $this->getAttributeValue($item, [
+            'catatan',
+            'keterangan',
+            'notes',
+            'note',
+        ]);
+
+        $this->sudah_dibeli = $this->isPurchased(
+            $this->getAttributeValue($item, [
+                'sudah_dibeli',
+                'is_completed',
+                'is_checked',
+                'is_bought',
+                'dibeli',
+                'completed',
+                'status',
             ])
-            ->where('user_id', $this->getUserId())
-            ->orderByDesc('tanggal_rencana')
-            ->orderByDesc('id')
-            ->get();
+        );
     }
 
-    #[Computed]
-    public function itemDaftarBelanja(): Collection
+    public function saveItem(): void
     {
-        return ItemDaftarBelanja::query()
-            ->with([
-                'mealPlan',
-                'bahanMakanan',
-            ])
-            ->where('user_id', $this->getUserId())
-            ->when($this->selectedTanggalBelanja, function ($query) {
-                $query->whereDate('tanggal_belanja', $this->selectedTanggalBelanja);
-            })
-            ->when($this->selectedStatus === 'belum', function ($query) {
-                $query->where('sudah_dibeli', false);
-            })
-            ->when($this->selectedStatus === 'sudah', function ($query) {
-                $query->where('sudah_dibeli', true);
-            })
-            ->when($this->search !== '', function ($query) {
-                $query->where('nama_item', 'like', '%' . $this->search . '%');
-            })
-            ->orderBy('sudah_dibeli')
-            ->orderByRaw('COALESCE(tanggal_belanja, created_at) asc')
-            ->orderBy('nama_item')
-            ->get();
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            session()->flash('belanja_error', 'User tidak ditemukan. Silakan login ulang.');
+            return;
+        }
+
+        $itemModel = new ItemDaftarBelanja();
+        $table = $itemModel->getTable();
+
+        if (! Schema::hasTable($table)) {
+            session()->flash('belanja_error', 'Tabel daftar belanja belum tersedia.');
+            return;
+        }
+
+        $validated = $this->validate([
+            'nama_item' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+            'jumlah' => [
+                'required',
+                'numeric',
+                'min:0.1',
+                'max:100000',
+            ],
+            'satuan' => [
+                'required',
+                'string',
+                'max:50',
+            ],
+            'kategori' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'catatan' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+            'sudah_dibeli' => [
+                'boolean',
+            ],
+        ], [
+            'nama_item.required' => 'Nama item wajib diisi.',
+            'jumlah.required' => 'Jumlah wajib diisi.',
+            'jumlah.min' => 'Jumlah minimal 0.1.',
+            'satuan.required' => 'Satuan wajib diisi.',
+        ]);
+
+        if ($this->editingId) {
+            $item = ItemDaftarBelanja::find($this->editingId);
+
+            if (! $item instanceof ItemDaftarBelanja) {
+                session()->flash('belanja_error', 'Item belanja tidak ditemukan.');
+                return;
+            }
+
+            if (! $this->canManageItem($item)) {
+                session()->flash('belanja_error', 'Kamu tidak memiliki akses untuk mengubah item ini.');
+                return;
+            }
+        } else {
+            $item = new ItemDaftarBelanja();
+
+            if (Schema::hasColumn($table, 'user_id')) {
+                $item->user_id = $user->id;
+            }
+        }
+
+        $this->fillItemData($item, $validated);
+
+        $item->save();
+
+        session()->flash(
+            'belanja_success',
+            $this->editingId
+                ? 'Item belanja berhasil diperbarui.'
+                : 'Item belanja berhasil ditambahkan.'
+        );
+
+        $this->resetForm();
+        $this->resetPage();
     }
 
-    #[Computed]
-    public function totalItem(): int
+    public function togglePurchased(int $id): void
     {
-        return $this->itemDaftarBelanja->count();
+        $item = ItemDaftarBelanja::find($id);
+
+        if (! $item instanceof ItemDaftarBelanja) {
+            session()->flash('belanja_error', 'Item belanja tidak ditemukan.');
+            return;
+        }
+
+        if (! $this->canManageItem($item)) {
+            session()->flash('belanja_error', 'Kamu tidak memiliki akses untuk mengubah item ini.');
+            return;
+        }
+
+        $table = $item->getTable();
+
+        $currentStatus = $this->getAttributeValue($item, [
+            'sudah_dibeli',
+            'is_completed',
+            'is_checked',
+            'is_bought',
+            'dibeli',
+            'completed',
+            'status',
+        ]);
+
+        $isPurchased = $this->isPurchased($currentStatus);
+
+        if (Schema::hasColumn($table, 'sudah_dibeli')) {
+            $item->sudah_dibeli = ! $isPurchased;
+        }
+
+        if (Schema::hasColumn($table, 'is_completed')) {
+            $item->is_completed = ! $isPurchased;
+        }
+
+        if (Schema::hasColumn($table, 'is_checked')) {
+            $item->is_checked = ! $isPurchased;
+        }
+
+        if (Schema::hasColumn($table, 'is_bought')) {
+            $item->is_bought = ! $isPurchased;
+        }
+
+        if (Schema::hasColumn($table, 'dibeli')) {
+            $item->dibeli = ! $isPurchased;
+        }
+
+        if (Schema::hasColumn($table, 'completed')) {
+            $item->completed = ! $isPurchased;
+        }
+
+        if (Schema::hasColumn($table, 'status')) {
+            $item->status = $isPurchased ? 'belum_dibeli' : 'sudah_dibeli';
+        }
+
+        $item->save();
+
+        session()->flash(
+            'belanja_success',
+            $isPurchased
+                ? 'Item berhasil ditandai belum dibeli.'
+                : 'Item berhasil ditandai sudah dibeli.'
+        );
     }
 
-    #[Computed]
-    public function totalSudahDibeli(): int
+    public function deleteItem(int $id): void
     {
-        return $this->itemDaftarBelanja
-            ->where('sudah_dibeli', true)
-            ->count();
+        $item = ItemDaftarBelanja::find($id);
+
+        if (! $item instanceof ItemDaftarBelanja) {
+            session()->flash('belanja_error', 'Item belanja tidak ditemukan.');
+            return;
+        }
+
+        if (! $this->canManageItem($item)) {
+            session()->flash('belanja_error', 'Kamu tidak memiliki akses untuk menghapus item ini.');
+            return;
+        }
+
+        try {
+            $item->delete();
+
+            session()->flash('belanja_success', 'Item belanja berhasil dihapus.');
+        } catch (Throwable) {
+            session()->flash('belanja_error', 'Item belanja tidak bisa dihapus.');
+        }
+
+        $this->resetPage();
     }
 
-    #[Computed]
-    public function totalBelumDibeli(): int
+    public function clearPurchasedItems(): void
     {
-        return $this->itemDaftarBelanja
-            ->where('sudah_dibeli', false)
-            ->count();
+        $items = $this->getBaseQuery()->get();
+
+        $deleted = 0;
+
+        foreach ($items as $item) {
+            if (! $item instanceof ItemDaftarBelanja) {
+                continue;
+            }
+
+            $status = $this->getAttributeValue($item, [
+                'sudah_dibeli',
+                'is_completed',
+                'is_checked',
+                'is_bought',
+                'dibeli',
+                'completed',
+                'status',
+            ]);
+
+            if (! $this->isPurchased($status)) {
+                continue;
+            }
+
+            try {
+                $item->delete();
+                $deleted++;
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        session()->flash(
+            'belanja_success',
+            $deleted > 0
+                ? $deleted . ' item yang sudah dibeli berhasil dihapus.'
+                : 'Tidak ada item yang sudah dibeli untuk dihapus.'
+        );
+
+        $this->resetPage();
     }
 
-    public function render()
+    public function cancelForm(): void
     {
-        return view('livewire.user.daftar-belanja-saya');
+        $this->resetForm();
+    }
+
+    private function resetForm(): void
+    {
+        $this->resetValidation();
+
+        $this->editingId = null;
+        $this->showForm = false;
+        $this->nama_item = '';
+        $this->jumlah = 1;
+        $this->satuan = 'pcs';
+        $this->kategori = null;
+        $this->catatan = null;
+        $this->sudah_dibeli = false;
+    }
+
+    private function fillItemData(ItemDaftarBelanja $item, array $validated): void
+    {
+        $table = $item->getTable();
+
+        $nameColumn = $this->firstExistingColumn($table, [
+            'nama_item',
+            'nama_bahan',
+            'nama',
+            'item',
+            'bahan',
+        ]);
+
+        if ($nameColumn) {
+            $item->{$nameColumn} = $validated['nama_item'];
+        }
+
+        $quantityColumn = $this->firstExistingColumn($table, [
+            'jumlah',
+            'qty',
+            'quantity',
+            'kuantitas',
+        ]);
+
+        if ($quantityColumn) {
+            $item->{$quantityColumn} = (float) $validated['jumlah'];
+        }
+
+        $unitColumn = $this->firstExistingColumn($table, [
+            'satuan',
+            'unit',
+        ]);
+
+        if ($unitColumn) {
+            $item->{$unitColumn} = $validated['satuan'];
+        }
+
+        $categoryColumn = $this->firstExistingColumn($table, [
+            'kategori',
+            'kategori_belanja',
+            'category',
+        ]);
+
+        if ($categoryColumn) {
+            $item->{$categoryColumn} = $validated['kategori'] ?? null;
+        }
+
+        $noteColumn = $this->firstExistingColumn($table, [
+            'catatan',
+            'keterangan',
+            'notes',
+            'note',
+        ]);
+
+        if ($noteColumn) {
+            $item->{$noteColumn} = $validated['catatan'] ?? null;
+        }
+
+        if (Schema::hasColumn($table, 'sudah_dibeli')) {
+            $item->sudah_dibeli = (bool) $validated['sudah_dibeli'];
+        }
+
+        if (Schema::hasColumn($table, 'is_completed')) {
+            $item->is_completed = (bool) $validated['sudah_dibeli'];
+        }
+
+        if (Schema::hasColumn($table, 'is_checked')) {
+            $item->is_checked = (bool) $validated['sudah_dibeli'];
+        }
+
+        if (Schema::hasColumn($table, 'is_bought')) {
+            $item->is_bought = (bool) $validated['sudah_dibeli'];
+        }
+
+        if (Schema::hasColumn($table, 'dibeli')) {
+            $item->dibeli = (bool) $validated['sudah_dibeli'];
+        }
+
+        if (Schema::hasColumn($table, 'completed')) {
+            $item->completed = (bool) $validated['sudah_dibeli'];
+        }
+
+        if (Schema::hasColumn($table, 'status')) {
+            $item->status = $validated['sudah_dibeli']
+                ? 'sudah_dibeli'
+                : 'belum_dibeli';
+        }
+    }
+
+    private function getBaseQuery()
+    {
+        $itemModel = new ItemDaftarBelanja();
+        $table = $itemModel->getTable();
+
+        $query = ItemDaftarBelanja::query();
+
+        if (Schema::hasColumn($table, 'user_id')) {
+            $query->where('user_id', Auth::id());
+        }
+
+        return $query;
+    }
+
+    private function getItemsPaginator(): LengthAwarePaginator
+    {
+        $itemModel = new ItemDaftarBelanja();
+        $table = $itemModel->getTable();
+
+        if (! Schema::hasTable($table)) {
+            return new LengthAwarePaginator([], 0, 8);
+        }
+
+        $query = $this->getBaseQuery();
+
+        if (trim($this->search) !== '') {
+            $search = '%' . trim($this->search) . '%';
+
+            $query->where(function ($subQuery) use ($table, $search) {
+                foreach ([
+                    'nama_item',
+                    'nama_bahan',
+                    'nama',
+                    'item',
+                    'bahan',
+                    'kategori',
+                    'kategori_belanja',
+                    'category',
+                    'catatan',
+                    'keterangan',
+                    'notes',
+                    'note',
+                ] as $column) {
+                    if (Schema::hasColumn($table, $column)) {
+                        $subQuery->orWhere($column, 'like', $search);
+                    }
+                }
+            });
+        }
+
+        if ($this->statusFilter !== '') {
+            $query->where(function ($subQuery) use ($table) {
+                $targetPurchased = $this->statusFilter === 'sudah_dibeli';
+
+                foreach ([
+                    'sudah_dibeli',
+                    'is_completed',
+                    'is_checked',
+                    'is_bought',
+                    'dibeli',
+                    'completed',
+                ] as $column) {
+                    if (Schema::hasColumn($table, $column)) {
+                        $subQuery->orWhere($column, $targetPurchased);
+                    }
+                }
+
+                if (Schema::hasColumn($table, 'status')) {
+                    if ($targetPurchased) {
+                        $subQuery->orWhereIn('status', [
+                            'sudah_dibeli',
+                            'dibeli',
+                            'completed',
+                            'selesai',
+                            'done',
+                        ]);
+                    } else {
+                        $subQuery->orWhereIn('status', [
+                            'belum_dibeli',
+                            'pending',
+                            'aktif',
+                            'active',
+                            'todo',
+                        ])->orWhereNull('status');
+                    }
+                }
+            });
+        }
+
+        if (Schema::hasColumn($table, 'created_at')) {
+            $query->latest();
+        } else {
+            $query->orderByDesc('id');
+        }
+
+        return $query
+            ->paginate(8)
+            ->through(fn (ItemDaftarBelanja $item): array => $this->formatItem($item));
+    }
+
+    private function getSummary(): array
+    {
+        $items = $this->getBaseQuery()->get();
+
+        $total = 0;
+        $purchased = 0;
+        $pending = 0;
+
+        foreach ($items as $item) {
+            if (! $item instanceof ItemDaftarBelanja) {
+                continue;
+            }
+
+            $total++;
+
+            $status = $this->getAttributeValue($item, [
+                'sudah_dibeli',
+                'is_completed',
+                'is_checked',
+                'is_bought',
+                'dibeli',
+                'completed',
+                'status',
+            ]);
+
+            if ($this->isPurchased($status)) {
+                $purchased++;
+            } else {
+                $pending++;
+            }
+        }
+
+        $percentage = $total > 0
+            ? (int) round(($purchased / $total) * 100)
+            : 0;
+
+        return [
+            'total' => $total,
+            'purchased' => $purchased,
+            'pending' => $pending,
+            'percentage' => $percentage,
+        ];
+    }
+
+    private function formatItem(ItemDaftarBelanja $item): array
+    {
+        $name = (string) ($this->getAttributeValue($item, [
+            'nama_item',
+            'nama_bahan',
+            'nama',
+            'item',
+            'bahan',
+        ]) ?? 'Item tanpa nama');
+
+        $quantity = (float) ($this->getAttributeValue($item, [
+            'jumlah',
+            'qty',
+            'quantity',
+            'kuantitas',
+        ]) ?? 1);
+
+        $unit = (string) ($this->getAttributeValue($item, [
+            'satuan',
+            'unit',
+        ]) ?? 'pcs');
+
+        $category = (string) ($this->getAttributeValue($item, [
+            'kategori',
+            'kategori_belanja',
+            'category',
+        ]) ?? 'Umum');
+
+        $note = $this->getAttributeValue($item, [
+            'catatan',
+            'keterangan',
+            'notes',
+            'note',
+        ]);
+
+        $status = $this->getAttributeValue($item, [
+            'sudah_dibeli',
+            'is_completed',
+            'is_checked',
+            'is_bought',
+            'dibeli',
+            'completed',
+            'status',
+        ]);
+
+        return [
+            'id' => $item->id,
+            'nama_item' => $name,
+            'jumlah' => $quantity,
+            'satuan' => $unit,
+            'kategori' => $category,
+            'catatan' => $note,
+            'sudah_dibeli' => $this->isPurchased($status),
+        ];
+    }
+
+    private function canManageItem(ItemDaftarBelanja $item): bool
+    {
+        $table = $item->getTable();
+
+        if (! Schema::hasColumn($table, 'user_id')) {
+            return true;
+        }
+
+        return (int) $item->user_id === (int) Auth::id();
+    }
+
+    private function isPurchased(mixed $status): bool
+    {
+        if (is_bool($status)) {
+            return $status;
+        }
+
+        if (is_numeric($status)) {
+            return (int) $status === 1;
+        }
+
+        return in_array((string) $status, [
+            'sudah_dibeli',
+            'dibeli',
+            'completed',
+            'selesai',
+            'done',
+            'checked',
+            'bought',
+        ], true);
+    }
+
+    private function getAttributeValue(Model $model, array $columns): mixed
+    {
+        foreach ($columns as $column) {
+            $attributes = $model->getAttributes();
+
+            if (! array_key_exists($column, $attributes)) {
+                continue;
+            }
+
+            return $model->getAttribute($column);
+        }
+
+        return null;
+    }
+
+    private function firstExistingColumn(string $table, array $columns): ?string
+    {
+        foreach ($columns as $column) {
+            if (Schema::hasColumn($table, $column)) {
+                return $column;
+            }
+        }
+
+        return null;
+    }
+
+    public function render(): View
+    {
+        return view('livewire.user.daftar-belanja-saya', [
+            'items' => $this->getItemsPaginator(),
+            'summary' => $this->getSummary(),
+        ]);
     }
 }

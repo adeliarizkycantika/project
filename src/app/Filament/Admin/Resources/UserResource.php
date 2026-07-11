@@ -4,94 +4,126 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Services\CalorieCalculatorService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationGroup = 'Administration';
+    protected static ?string $navigationGroup = 'Manajemen User';
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?string $navigationLabel = 'Data User';
 
-    protected static ?int $navigationSort = -2;
+    protected static ?string $modelLabel = 'User';
 
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::count();
-    }
+    protected static ?string $pluralModelLabel = 'Data User';
 
-    public static function getGloballySearchableAttributes(): array
-    {
-        return ['name', 'email', 'roles.name'];
-    }
-
-    public static function getGlobalSearchResultDetails(Model $record): array
-    {
-        return [
-            'Role' => $record->roles->pluck('name')->implode(', '),
-            'Email' => $record->email,
-        ];
-    }
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-
-                Forms\Components\Grid::make(2)
+                Forms\Components\Section::make('Informasi Akun')
+                    ->description('Data utama akun user.')
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->minLength(2)
-                            ->maxLength(255)
-                            ->columnSpan('full')
-                            ->required(),
-                        Forms\Components\FileUpload::make('avatar_url')
-                            ->label('Avatar')
-                            ->image()
-                            ->optimize('webp')
-                            ->imageEditor()
-                            ->imagePreviewHeight('250')
-                            ->panelAspectRatio('7:2')
-                            ->panelLayout('integrated')
-                            ->columnSpan('full'),
-                        Forms\Components\TextInput::make('email')
+                            ->label('Nama')
                             ->required()
-                            ->prefixIcon('heroicon-m-envelope')
-                            ->columnSpan('full')
-                            ->email(),
+                            ->maxLength(255),
+
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email')
+                            ->email()
+                            ->required()
+                            ->unique(
+                                table: 'users',
+                                column: 'email',
+                                ignoreRecord: true
+                            )
+                            ->maxLength(255),
+
+                        Forms\Components\Select::make('role')
+                            ->label('Role')
+                            ->options(self::getRoleOptions())
+                            ->searchable()
+                            ->default('user')
+                            ->required(),
 
                         Forms\Components\TextInput::make('password')
+                            ->label('Password')
                             ->password()
-                            ->confirmed()
-                            ->columnSpan(1)
-                            ->dehydrateStateUsing(fn ($state) => Hash::make($state))
-                            ->dehydrated(fn ($state) => filled($state))
-                            ->required(fn (string $context): bool => $context === 'create'),
-                        Forms\Components\TextInput::make('password_confirmation')
-                            ->required(fn (string $context): bool => $context === 'create')
-                            ->columnSpan(1)
-                            ->password(),
-                    ]),
-
-                Forms\Components\Section::make('Roles')
-                    ->schema([
-                        Forms\Components\Select::make('roles')
-                            ->required()
-                            ->multiple()
-                            ->relationship('roles', 'name')
-                            ->label('Roles'),
+                            ->revealable()
+                            ->maxLength(255)
+                            ->dehydrated(function ($state): bool {
+                                return filled($state);
+                            })
+                            ->required(function (string $operation): bool {
+                                return $operation === 'create';
+                            })
+                            ->helperText('Kosongkan saat edit jika tidak ingin mengganti password.'),
                     ])
-                    ->columns(1),
+                    ->columns(2),
 
+                Forms\Components\Section::make('Data Tubuh')
+                    ->description('Data ini digunakan untuk menghitung kebutuhan kalori harian user.')
+                    ->schema([
+                        Forms\Components\Select::make('gender')
+                            ->label('Gender')
+                            ->options([
+                                'male' => 'Male',
+                                'female' => 'Female',
+                            ])
+                            ->required(),
+
+                        Forms\Components\TextInput::make('age')
+                            ->label('Usia')
+                            ->numeric()
+                            ->minValue(10)
+                            ->maxValue(100)
+                            ->suffix('tahun')
+                            ->required(),
+
+                        Forms\Components\TextInput::make('height_cm')
+                            ->label('Height')
+                            ->numeric()
+                            ->minValue(100)
+                            ->maxValue(250)
+                            ->suffix('cm')
+                            ->required(),
+
+                        Forms\Components\TextInput::make('weight_kg')
+                            ->label('Berat Badan')
+                            ->numeric()
+                            ->minValue(25)
+                            ->maxValue(300)
+                            ->suffix('kg')
+                            ->required(),
+
+                        Forms\Components\Select::make('activity_level')
+                            ->label('Activity Level')
+                            ->options(self::getActivityLevelOptions())
+                            ->searchable()
+                            ->required(),
+
+                        Forms\Components\TextInput::make('daily_calorie_target')
+                            ->label('Daily Calorie Target')
+                            ->numeric()
+                            ->suffix('kkal')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->helperText('Nilai ini dihitung otomatis setelah data user disimpan.'),
+                    ])
+                    ->columns(3),
             ]);
     }
 
@@ -99,53 +131,136 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->sortable()
-                    ->searchable(),
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nama')
+                    ->searchable()
                     ->sortable()
-                    ->searchable(),
-                Tables\Columns\ImageColumn::make('avatar_url')
-                    ->defaultImageUrl(url('https://www.gravatar.com/avatar/64e1b8d34f425d19e1ee2ea7236d3028?d=mp&r=g&s=250'))
-                    ->label('Avatar')
-                    ->circular(),
-                Tables\Columns\TextColumn::make('email')
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('roles.name')
-                    ->badge()
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->date()
-                    ->sortable()
-                    ->searchable(),
+                    ->weight('bold'),
 
+                Tables\Columns\TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('role')
+                    ->label('Role')
+                    ->badge()
+                    ->formatStateUsing(function (?string $state): string {
+                        return match ($state) {
+                            'admin' => 'Admin',
+                            'user' => 'User',
+                            default => $state ? ucfirst($state) : '-',
+                        };
+                    })
+                    ->color(function (?string $state): string {
+                        return match ($state) {
+                            'admin' => 'danger',
+                            'user' => 'success',
+                            default => 'gray',
+                        };
+                    })
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('gender_label')
+                    ->label('Gender')
+                    ->badge()
+                    ->color('gray'),
+
+                Tables\Columns\TextColumn::make('age')
+                    ->label('Usia')
+                    ->suffix(' tahun')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('height_cm')
+                    ->label('Height')
+                    ->suffix(' cm')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('weight_kg')
+                    ->label('Berat')
+                    ->formatStateUsing(function ($state): string {
+                        if (! $state) {
+                            return '-';
+                        }
+
+                        return number_format((float) $state, 1, ',', '.') . ' kg';
+                    })
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('activity_level_label')
+                    ->label('Aktivitas')
+                    ->badge()
+                    ->color('info'),
+
+                Tables\Columns\TextColumn::make('daily_calorie_target')
+                    ->label('Target Kalori')
+                    ->formatStateUsing(function ($state): string {
+                        if (! $state) {
+                            return '-';
+                        }
+
+                        return number_format((int) $state, 0, ',', '.') . ' kkal';
+                    })
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat')
+                    ->dateTime('d M Y H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('role')
+                    ->label('Role')
+                    ->options(self::getRoleOptions()),
+
+                Tables\Filters\SelectFilter::make('gender')
+                    ->label('Gender')
+                    ->options([
+                        'male' => 'Male',
+                        'female' => 'Female',
+                    ]),
+
+                Tables\Filters\SelectFilter::make('activity_level')
+                    ->label('Activity Level')
+                    ->options(self::getActivityLevelOptions()),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label('Edit'),
 
+                Tables\Actions\DeleteAction::make()
+                    ->label('Hapus')
+                    ->visible(function (User $record): bool {
+                        return Auth::id() !== (int) $record->getKey();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    // Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->label('Hapus Terpilih'),
                 ]),
             ])
-            ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
-            ]);
+            ->defaultSort('created_at', 'desc');
     }
 
-    public static function getRelations(): array
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with('roles');
+    }
+
+    public static function getRoleOptions(): array
     {
         return [
-            //
+            'admin' => 'Admin',
+            'user' => 'User',
         ];
+    }
+
+    public static function getActivityLevelOptions(): array
+    {
+        return CalorieCalculatorService::ACTIVITY_LABELS;
     }
 
     public static function getPages(): array
