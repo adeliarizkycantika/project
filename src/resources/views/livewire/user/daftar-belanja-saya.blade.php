@@ -522,8 +522,7 @@
         .shop-content-grid {
             display: grid;
             grid-template-columns:
-                minmax(0, 1.4fr)
-                minmax(310px, 0.6fr);
+                repeat(2, minmax(0, 1fr));
             align-items: start;
             gap: 24px;
         }
@@ -1301,6 +1300,179 @@
                 font-size: 28px;
             }
         }
+    
+        /* shopping-food-nutrition-fields */
+
+        .shopping-nutrition-box {
+            margin: 16px 0;
+            padding: 16px;
+            border: 1px solid #d9e2ef;
+            border-radius: 15px;
+            background:
+                linear-gradient(
+                    135deg,
+                    #f7faff 0%,
+                    #faf9ff 100%
+                );
+        }
+
+        .shopping-nutrition-header {
+            margin-bottom: 14px;
+        }
+
+        .shopping-nutrition-title {
+            margin: 0;
+            color: #1f2732;
+            font-size: 14px;
+            line-height: 1.4;
+            font-weight: 800;
+        }
+
+        .shopping-nutrition-description {
+            margin: 5px 0 0;
+            color: #747e8c;
+            font-size: 10px;
+            line-height: 1.55;
+        }
+
+        .shopping-nutrition-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .shopping-nutrition-field {
+            min-width: 0;
+        }
+
+        .shopping-nutrition-field.is-full {
+            grid-column: 1 / -1;
+        }
+
+        .shopping-nutrition-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #596475;
+            font-size: 10px;
+            line-height: 1.4;
+            font-weight: 750;
+        }
+
+        .shopping-nutrition-required {
+            color: #d94f5c;
+        }
+
+        .shopping-nutrition-input,
+        .shopping-nutrition-select {
+            width: 100%;
+            min-height: 42px;
+            padding: 10px 12px;
+            border: 1px solid #cbd7e7;
+            border-radius: 10px;
+            outline: none;
+            color: #202832;
+            background: #ffffff;
+            font: inherit;
+            font-size: 11px;
+            transition:
+                border-color 180ms ease,
+                box-shadow 180ms ease;
+        }
+
+        .shopping-nutrition-input:focus,
+        .shopping-nutrition-select:focus {
+            border-color: #7d9fd3;
+            box-shadow:
+                0 0 0 3px
+                rgba(125, 159, 211, 0.14);
+        }
+
+        .shopping-nutrition-select-shell {
+            position: relative;
+            width: 100%;
+        }
+
+        .shopping-nutrition-select {
+            padding-right: 46px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: none;
+        }
+
+        .shopping-nutrition-arrow {
+            position: absolute;
+            z-index: 3;
+            top: 50%;
+            right: 9px;
+
+            width: 27px;
+            height: 27px;
+
+            display: grid;
+            place-items: center;
+
+            border: 1px solid #d4deed;
+            border-radius: 8px;
+
+            color: #5579ad;
+            background: #eaf1ff;
+
+            pointer-events: none;
+
+            transform: translateY(-50%);
+            transition:
+                transform 180ms ease,
+                color 180ms ease,
+                background 180ms ease;
+        }
+
+        .shopping-nutrition-arrow svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .shopping-nutrition-select-shell:focus-within
+        .shopping-nutrition-arrow {
+            color: #ffffff;
+            background: #7d9fd3;
+            transform:
+                translateY(-50%)
+                rotate(180deg);
+        }
+
+        .shopping-nutrition-error {
+            display: block;
+            margin-top: 5px;
+            color: #c94255;
+            font-size: 9px;
+            line-height: 1.45;
+        }
+
+        .shopping-nutrition-help {
+            margin: 11px 0 0;
+            padding: 9px 10px;
+            border: 1px solid #cfe3da;
+            border-radius: 9px;
+            color: #477968;
+            background: #eef9f5;
+            font-size: 9px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 520px) {
+            .shopping-nutrition-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .shopping-nutrition-field.is-full {
+                grid-column: auto;
+            }
+        }
+
+
     </style>
 
     <div class="shop-stack">
@@ -2010,7 +2182,234 @@
                                     @enderror
                                 </div>
 
-                                <label class="shop-checkbox-card">
+                                
+                        {{-- START INFORMASI NUTRISI MAKANAN --}}
+                        <section
+                            class="shopping-nutrition-box"
+                            data-shopping-nutrition-fields
+                        >
+                            <header class="shopping-nutrition-header">
+                                <h3 class="shopping-nutrition-title">
+                                    Informasi Nutrisi Makanan
+                                </h3>
+
+                                <p class="shopping-nutrition-description">
+                                    Lengkapi nilai nutrisi untuk satu porsi.
+                                    Data ini akan disimpan ke Koleksi Makanan.
+                                </p>
+                            </header>
+
+                            <div class="shopping-nutrition-grid">
+                                <div
+                                    class="shopping-nutrition-field is-full"
+                                >
+                                    <label
+                                        for="kategori_makanan_id"
+                                        class="shopping-nutrition-label"
+                                    >
+                                        Kategori makanan
+
+                                        <span
+                                            class="shopping-nutrition-required"
+                                        >
+                                            *
+                                        </span>
+                                    </label>
+
+                                    <div
+                                        class="shopping-nutrition-select-shell"
+                                    >
+                                        <select
+                                            id="kategori_makanan_id"
+                                            class="shopping-nutrition-select"
+                                            wire:model="kategori_makanan_id"
+                                        >
+                                            <option value="">
+                                                Pilih kategori makanan
+                                            </option>
+
+                                            @foreach (
+                                                $kategoriOptions
+                                                as $id => $label
+                                            )
+                                                <option value="{{ $id }}">
+                                                    {{ $label }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+
+                                        <span
+                                            class="shopping-nutrition-arrow"
+                                            aria-hidden="true"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2.2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            >
+                                                <path d="m7 10 5 5 5-5" />
+                                            </svg>
+                                        </span>
+                                    </div>
+
+                                    @error('kategori_makanan_id')
+                                        <span
+                                            class="shopping-nutrition-error"
+                                        >
+                                            {{ $message }}
+                                        </span>
+                                    @enderror
+                                </div>
+
+                                <div class="shopping-nutrition-field">
+                                    <label
+                                        for="kalori"
+                                        class="shopping-nutrition-label"
+                                    >
+                                        Kalori per porsi
+
+                                        <span
+                                            class="shopping-nutrition-required"
+                                        >
+                                            *
+                                        </span>
+                                    </label>
+
+                                    <input
+                                        id="kalori"
+                                        type="number"
+                                        min="0"
+                                        max="10000"
+                                        step="1"
+                                        class="shopping-nutrition-input"
+                                        placeholder="Contoh: 250"
+                                        wire:model="kalori"
+                                    >
+
+                                    @error('kalori')
+                                        <span
+                                            class="shopping-nutrition-error"
+                                        >
+                                            {{ $message }}
+                                        </span>
+                                    @enderror
+                                </div>
+
+                                <div class="shopping-nutrition-field">
+                                    <label
+                                        for="protein"
+                                        class="shopping-nutrition-label"
+                                    >
+                                        Protein per porsi
+
+                                        <span
+                                            class="shopping-nutrition-required"
+                                        >
+                                            *
+                                        </span>
+                                    </label>
+
+                                    <input
+                                        id="protein"
+                                        type="number"
+                                        min="0"
+                                        max="1000"
+                                        step="0.1"
+                                        class="shopping-nutrition-input"
+                                        placeholder="Dalam gram"
+                                        wire:model="protein"
+                                    >
+
+                                    @error('protein')
+                                        <span
+                                            class="shopping-nutrition-error"
+                                        >
+                                            {{ $message }}
+                                        </span>
+                                    @enderror
+                                </div>
+
+                                <div class="shopping-nutrition-field">
+                                    <label
+                                        for="karbohidrat"
+                                        class="shopping-nutrition-label"
+                                    >
+                                        Karbohidrat per porsi
+
+                                        <span
+                                            class="shopping-nutrition-required"
+                                        >
+                                            *
+                                        </span>
+                                    </label>
+
+                                    <input
+                                        id="karbohidrat"
+                                        type="number"
+                                        min="0"
+                                        max="1000"
+                                        step="0.1"
+                                        class="shopping-nutrition-input"
+                                        placeholder="Dalam gram"
+                                        wire:model="karbohidrat"
+                                    >
+
+                                    @error('karbohidrat')
+                                        <span
+                                            class="shopping-nutrition-error"
+                                        >
+                                            {{ $message }}
+                                        </span>
+                                    @enderror
+                                </div>
+
+                                <div class="shopping-nutrition-field">
+                                    <label
+                                        for="lemak"
+                                        class="shopping-nutrition-label"
+                                    >
+                                        Lemak per porsi
+
+                                        <span
+                                            class="shopping-nutrition-required"
+                                        >
+                                            *
+                                        </span>
+                                    </label>
+
+                                    <input
+                                        id="lemak"
+                                        type="number"
+                                        min="0"
+                                        max="1000"
+                                        step="0.1"
+                                        class="shopping-nutrition-input"
+                                        placeholder="Dalam gram"
+                                        wire:model="lemak"
+                                    >
+
+                                    @error('lemak')
+                                        <span
+                                            class="shopping-nutrition-error"
+                                        >
+                                            {{ $message }}
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <p class="shopping-nutrition-help">
+                                Makanan hanya muncul pada dropdown Meal Plan
+                                ketika item telah ditandai sebagai sudah dibeli.
+                            </p>
+                        </section>
+                        {{-- END INFORMASI NUTRISI MAKANAN --}}
+
+<label class="shop-checkbox-card">
                                     <input
                                         type="checkbox"
                                         wire:model="sudah_dibeli"

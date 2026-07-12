@@ -15,39 +15,52 @@ class SiteSetting extends Model
         'site_subtitle',
         'logo_path',
         'auth_background_path',
+        'recommendation_image_path',
     ];
 
     protected $appends = [
         'logo_url',
         'auth_background_url',
+        'recommendation_image_url',
     ];
 
     /**
-     * URL logo yang telah diunggah melalui admin.
-     * Jika belum ada logo, hasilnya null.
+     * URL logo yang diunggah melalui Panel Admin.
      */
     public function getLogoUrlAttribute(): ?string
     {
-        $path = trim((string) $this->logo_path);
-
-        if ($path === '') {
-            return null;
-        }
-
-        if (! Storage::disk('public')->exists($path)) {
-            return null;
-        }
-
-        return asset('storage/' . ltrim($path, '/'));
+        return $this->getPublicStorageUrl(
+            $this->logo_path
+        );
     }
 
     /**
-     * URL background autentikasi yang diunggah melalui admin.
-     * Jika belum ada background, hasilnya null.
+     * URL background halaman login dan register.
      */
     public function getAuthBackgroundUrlAttribute(): ?string
     {
-        $path = trim((string) $this->auth_background_path);
+        return $this->getPublicStorageUrl(
+            $this->auth_background_path
+        );
+    }
+
+    /**
+     * URL satu foto global untuk seluruh menu rekomendasi.
+     */
+    public function getRecommendationImageUrlAttribute(): ?string
+    {
+        return $this->getPublicStorageUrl(
+            $this->recommendation_image_path
+        );
+    }
+
+    /**
+     * Mengubah path file pada disk public menjadi URL browser.
+     */
+    private function getPublicStorageUrl(
+        ?string $storedPath
+    ): ?string {
+        $path = trim((string) $storedPath);
 
         if ($path === '') {
             return null;
@@ -57,11 +70,13 @@ class SiteSetting extends Model
             return null;
         }
 
-        return asset('storage/' . ltrim($path, '/'));
+        return asset(
+            'storage/' . ltrim($path, '/')
+        );
     }
 
     /**
-     * Ambil satu pengaturan website yang aktif.
+     * Mengambil satu record pengaturan website.
      */
     public static function current(): self
     {
@@ -78,6 +93,7 @@ class SiteSetting extends Model
             'site_subtitle' => 'Meal Planner & Kalori Harian',
             'logo_path' => null,
             'auth_background_path' => null,
+            'recommendation_image_path' => null,
         ]);
     }
 }

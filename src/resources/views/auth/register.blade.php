@@ -565,6 +565,362 @@
                 grid-column: auto;
             }
         }
+    
+        /* auth-dashboard-palette-start */
+
+        /*
+         * Palet autentikasi disamakan dengan dashboard:
+         * biru, lavender, dan mint.
+         * Bagian ini hanya mengubah warna.
+         */
+        :root {
+            --pink: #7c9fd3;
+            --pink-dark: #5579ad;
+            --pink-soft: #e8f1ff;
+
+            --green: #7fc7b2;
+            --green-soft: #e6f8f2;
+
+            --blue: #7c9fd3;
+            --blue-dark: #5579ad;
+            --blue-soft: #e8f1;
+
+            --blue: #7c9fd3;
+            --blue-darkff;
+
+            --violet: #a697d6;
+            --violet-dark: #7160a5;
+            --violet-soft: #f0ecff;
+
+            --mint: #7fc7b2;
+            --mint-dark: #438674;
+            --mint-soft: #e6f8f2;
+
+            --primary: #7c9fd3;
+            --primary-dark: #5579ad;
+            --primary-soft: #e8f1ff;
+
+            --accent: #a697d6;
+            --accent-dark: #7160a5;
+            --accent-soft: #f0ecff;
+
+            --brand: #7c9fd3;
+            --brand-dark: #5579ad;
+            --brand-soft: #e8f1ff;
+
+            --text: #191c20;
+            --muted: #626a76;
+            --line: #dfe3eb;
+
+            --surface: rgba(255, 255, 255, 0.90);
+
+            --shadow:
+                0 24px 70px
+                rgba(85, 121, 173, 0.16);
+
+            --shadow-soft:
+                0 14px 35px
+                rgba(68, 83, 110, 0.09);
+        }
+
+        html,
+        body {
+            background:
+                radial-gradient(
+                    circle at 0% 0%,
+                    rgba(166, 151, 214, 0.22),
+                    transparent 30%
+                ),
+                radial-gradient(
+                    circle at 100% 100%,
+                    rgba(127, 199, 178, 0.22),
+                    transparent 34%
+                ),
+                linear-gradient(
+                    135deg,
+                    #f7f7ff 0%,
+                    #f2f7ff 50%,
+                    #eefaf7 100%
+                ) !important;
+        }
+
+        /*
+         * Elemen dekoratif halaman.
+         */
+        .bg-blob.one {
+            background:
+                rgba(166, 151, 214, 0.20) !important;
+        }
+
+        .bg-blob.two {
+            background:
+                rgba(127, 199, 178, 0.22) !important;
+        }
+
+        /*
+         * Panel formulir kanan.
+         */
+        .auth-panel,
+        .auth-side,
+        .form-panel,
+        .login-panel,
+        .register-panel,
+        .auth-form-panel {
+            background:
+                rgba(248, 251, 255, 0.88) !important;
+
+            border-color:
+                rgba(203, 210, 221, 0.88) !important;
+
+            box-shadow:
+                0 24px 70px
+                rgba(85, 121, 173, 0.14) !important;
+        }
+
+        .auth-card,
+        .form-card,
+        .login-card,
+        .register-card {
+            background:
+                rgba(255, 255, 255, 0.94) !important;
+
+            border-color:
+                rgba(203, 210, 221, 0.78) !important;
+
+            box-shadow:
+                0 22px 60px
+                rgba(68, 83, 110, 0.09) !important;
+        }
+
+        /*
+         * Panel gambar kiri tetap memakai foto dinamis.
+         * Hanya tint warnanya dibuat biru netral.
+         */
+        .hero-panel,
+        .auth-hero,
+        .auth-visual,
+        .visual-panel,
+        .brand-panel,
+        .auth-media {
+            border-color:
+                rgba(203, 210, 221, 0.76) !important;
+
+            box-shadow:
+                0 24px 70px
+                rgba(68, 83, 110, 0.16) !important;
+        }
+
+        .hero-panel[style*="background"],
+        .auth-hero[style*="background"],
+        .auth-visual[style*="background"],
+        .visual-panel[style*="background"],
+        .brand-panel[style*="background"],
+        .auth-media[style*="background"] {
+            background-color:
+                rgba(62, 82, 114, 0.48) !important;
+
+            background-blend-mode:
+                multiply !important;
+        }
+
+        /*
+         * Judul aksen, link, dan badge.
+         */
+        .brand-subtitle,
+        .hero-title span,
+        .hero-pill,
+        .hero-badge,
+        .visual-badge,
+        .forgot-link,
+        .auth-footer a,
+        .auth-link,
+        .register-link,
+        .login-link,
+        .link-primary {
+            color: #5579ad !important;
+        }
+
+        .hero-pill,
+        .hero-badge,
+        .visual-badge {
+            background:
+                rgba(255, 255, 255, 0.90) !important;
+
+            border-color:
+                rgba(124, 159, 211, 0.32) !important;
+
+            box-shadow:
+                0 10px 24px
+                rgba(85, 121, 173, 0.10) !important;
+        }
+
+        /*
+         * Kotak ikon.
+         */
+        .auth-icon,
+        .form-icon,
+        .welcome-icon,
+        .header-icon,
+        .icon-box,
+        .feature-icon.pink {
+            color: #5579ad !important;
+            background: #e8f1ff !important;
+        }
+
+        .feature-icon.green {
+            color: #438674 !important;
+            background: #e6f8f2 !important;
+        }
+
+        /*
+         * Input Login dan Register.
+         */
+        .form-input,
+        .form-select,
+        .auth-input,
+        .auth-select,
+        input:not([type="checkbox"]):not([type="radio"]),
+        select {
+            border-color: #cbd2dd !important;
+            background-color: #ffffff !important;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .auth-input:focus,
+        .auth-select:focus,
+        input:not([type="checkbox"]):not([type="radio"]):focus,
+        select:focus {
+            border-color: #7c9fd3 !important;
+
+            box-shadow:
+                0 0 0 4px
+                rgba(124, 159, 211, 0.14) !important;
+        }
+
+        input[type="checkbox"],
+        input[type="radio"] {
+            accent-color: #7c9fd3 !important;
+        }
+
+        /*
+         * Tombol lihat password.
+         */
+        .password-eye:hover,
+        .password-toggle:hover,
+        .toggle-password:hover {
+            color: #5579ad !important;
+            background: #e8f1ff !important;
+        }
+
+        /*
+         * Tombol utama Login dan Register.
+         */
+        .submit-button,
+        .auth-submit,
+        .primary-button,
+        .auth-primary-button,
+        .login-button,
+        .register-button {
+            color: #ffffff !important;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #7c9fd3 0%,
+                    #6f91c6 52%,
+                    #5579ad 100%
+                ) !important;
+
+            box-shadow:
+                0 18px 34px
+                rgba(85, 121, 173, 0.25) !important;
+        }
+
+        .submit-button:hover,
+        .auth-submit:hover,
+        .primary-button:hover,
+        .auth-primary-button:hover,
+        .login-button:hover,
+        .register-button:hover {
+            background:
+                linear-gradient(
+                    135deg,
+                    #7396cb 0%,
+                    #6689be 52%,
+                    #4e70a3 100%
+                ) !important;
+
+            box-shadow:
+                0 22px 40px
+                rgba(85, 121, 173, 0.30) !important;
+        }
+
+        /*
+         * Tombol Google tetap putih, hanya border diselaraskan.
+         */
+        .google-button,
+        .google-login,
+        .google-auth-button,
+        .oauth-button {
+            color: #191c20 !important;
+            background: #ffffff !important;
+            border-color: #cbd2dd !important;
+            box-shadow: none !important;
+        }
+
+        .google-button:hover,
+        .google-login:hover,
+        .google-auth-button:hover,
+        .oauth-button:hover {
+            background: #f7f9ff !important;
+            border-color: #aebed6 !important;
+        }
+
+        /*
+         * Kartu informasi bagian bawah.
+         */
+        .mini-info,
+        .info-card,
+        .auth-info-card {
+            background: #f8faff !important;
+            border-color: #dfe3eb !important;
+        }
+
+        .mini-info:first-child,
+        .info-card:first-child,
+        .auth-info-card:first-child {
+            background:
+                linear-gradient(
+                    135deg,
+                    #f5f2ff,
+                    #f8faff
+                ) !important;
+        }
+
+        .mini-info:last-child,
+        .info-card:last-child,
+        .auth-info-card:last-child {
+            background:
+                linear-gradient(
+                    135deg,
+                    #eefaf7,
+                    #f8faff
+                ) !important;
+        }
+
+        /*
+         * Garis dan border yang sebelumnya berwarna pink.
+         */
+        .feature-card,
+        .auth-header,
+        .form-divider,
+        .auth-divider {
+            border-color: #dfe3eb !important;
+        }
+
+        /* auth-dashboard-palette-end */
+
     </style>
 </head>
 <body>

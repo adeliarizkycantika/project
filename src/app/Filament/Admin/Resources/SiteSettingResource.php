@@ -33,30 +33,42 @@ class SiteSettingResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Identitas Website')
+                Forms\Components\Section::make(
+                    'Identitas Website'
+                )
                     ->description(
-                        'Atur nama website, subjudul, logo, dan background halaman autentikasi.'
+                        'Atur nama, subjudul, logo, serta background halaman login dan register.'
                     )
                     ->schema([
-                        Forms\Components\TextInput::make('site_name')
+                        Forms\Components\TextInput::make(
+                            'site_name'
+                        )
                             ->label('Nama Website')
                             ->placeholder('Pola Makan Sehat')
                             ->required()
                             ->maxLength(255),
 
-                        Forms\Components\TextInput::make('site_subtitle')
+                        Forms\Components\TextInput::make(
+                            'site_subtitle'
+                        )
                             ->label('Subjudul Website')
-                            ->placeholder('Meal Planner & Kalori Harian')
+                            ->placeholder(
+                                'Meal Planner & Kalori Harian'
+                            )
                             ->required()
                             ->maxLength(255),
 
-                        Forms\Components\FileUpload::make('logo_path')
+                        Forms\Components\FileUpload::make(
+                            'logo_path'
+                        )
                             ->label('Logo Website')
                             ->image()
                             ->imageEditor()
                             ->imagePreviewHeight('180')
                             ->disk('public')
-                            ->directory('site-settings/logos')
+                            ->directory(
+                                'site-settings/logos'
+                            )
                             ->visibility('public')
                             ->maxSize(2048)
                             ->acceptedFileTypes([
@@ -65,16 +77,22 @@ class SiteSettingResource extends Resource
                                 'image/webp',
                             ])
                             ->helperText(
-                                'Gunakan gambar persegi. Format JPG, PNG, atau WebP. Maksimal 2 MB.'
+                                'Boleh menggunakan gambar persegi, portrait, atau landscape. Gambar persegi disarankan agar logo terlihat lebih proporsional. Maksimal 2 MB.'
                             ),
 
-                        Forms\Components\FileUpload::make('auth_background_path')
-                            ->label('Background Login dan Register')
+                        Forms\Components\FileUpload::make(
+                            'auth_background_path'
+                        )
+                            ->label(
+                                'Background Login dan Register'
+                            )
                             ->image()
                             ->imageEditor()
                             ->imagePreviewHeight('260')
                             ->disk('public')
-                            ->directory('site-settings/backgrounds')
+                            ->directory(
+                                'site-settings/backgrounds'
+                            )
                             ->visibility('public')
                             ->maxSize(5120)
                             ->acceptedFileTypes([
@@ -83,10 +101,43 @@ class SiteSettingResource extends Resource
                                 'image/webp',
                             ])
                             ->helperText(
-                                'Gunakan gambar landscape minimal 1600 × 1000 piksel. Maksimal 5 MB.'
+                                'Bebas menggunakan foto portrait, landscape, atau persegi. Tampilan menyesuaikan otomatis menggunakan mode cover. Maksimal 5 MB.'
                             ),
                     ])
                     ->columns(2),
+
+                Forms\Components\Section::make(
+                    'Gambar Rekomendasi Makanan'
+                )
+                    ->description(
+                        'Atur satu foto global yang digunakan bersama oleh seluruh makanan rekomendasi.'
+                    )
+                    ->schema([
+                        Forms\Components\FileUpload::make(
+                            'recommendation_image_path'
+                        )
+                            ->label(
+                                'Foto Rekomendasi Global'
+                            )
+                            ->image()
+                            ->imageEditor()
+                            ->imagePreviewHeight('280')
+                            ->disk('public')
+                            ->directory(
+                                'site-settings/recommendations'
+                            )
+                            ->visibility('public')
+                            ->maxSize(5120)
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                            ])
+                            ->helperText(
+                                'Cukup unggah satu foto. Semua makanan yang ditandai sebagai rekomendasi akan memakai foto ini. Bebas portrait, landscape, atau persegi. Maksimal 5 MB.'
+                            ),
+                    ])
+                    ->columns(1),
             ]);
     }
 
@@ -94,31 +145,51 @@ class SiteSettingResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('logo_path')
+                Tables\Columns\ImageColumn::make(
+                    'logo_path'
+                )
                     ->label('Logo')
                     ->disk('public')
                     ->circular()
                     ->defaultImageUrl(
-                        asset('images/logo-pola-makan-sehat.png')
+                        asset(
+                            'images/logo-pola-makan-sehat.png'
+                        )
                     ),
 
-                Tables\Columns\TextColumn::make('site_name')
+                Tables\Columns\TextColumn::make(
+                    'site_name'
+                )
                     ->label('Nama Website')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('site_subtitle')
+                Tables\Columns\TextColumn::make(
+                    'site_subtitle'
+                )
                     ->label('Subjudul')
                     ->limit(45),
 
-                Tables\Columns\ImageColumn::make('auth_background_path')
-                    ->label('Background')
+                Tables\Columns\ImageColumn::make(
+                    'auth_background_path'
+                )
+                    ->label('Background Login')
                     ->disk('public')
                     ->height(70)
                     ->width(120),
 
-                Tables\Columns\TextColumn::make('updated_at')
+                Tables\Columns\ImageColumn::make(
+                    'recommendation_image_path'
+                )
+                    ->label('Foto Rekomendasi')
+                    ->disk('public')
+                    ->height(70)
+                    ->width(120),
+
+                Tables\Columns\TextColumn::make(
+                    'updated_at'
+                )
                     ->label('Terakhir Diubah')
                     ->dateTime('d M Y, H:i')
                     ->sortable(),
@@ -130,13 +201,17 @@ class SiteSettingResource extends Resource
             ->bulkActions([]);
     }
 
+    /**
+     * Website hanya menggunakan satu record pengaturan.
+     */
     public static function canCreate(): bool
     {
         return ! SiteSetting::query()->exists();
     }
 
-    public static function canDelete(Model $record): bool
-    {
+    public static function canDelete(
+        Model $record
+    ): bool {
         return false;
     }
 
@@ -148,9 +223,16 @@ class SiteSettingResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSiteSettings::route('/'),
-            'create' => Pages\CreateSiteSetting::route('/create'),
-            'edit' => Pages\EditSiteSetting::route('/{record}/edit'),
+            'index' =>
+                Pages\ListSiteSettings::route('/'),
+
+            'create' =>
+                Pages\CreateSiteSetting::route('/create'),
+
+            'edit' =>
+                Pages\EditSiteSetting::route(
+                    '/{record}/edit'
+                ),
         ];
     }
 }

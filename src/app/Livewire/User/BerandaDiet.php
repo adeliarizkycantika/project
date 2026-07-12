@@ -3,6 +3,7 @@
 namespace App\Livewire\User;
 
 use App\Models\CatatanMakananHarian;
+use App\Models\KategoriMakanan;
 use App\Models\Makanan;
 use App\Models\MealPlan;
 use App\Models\MealPlanItem;
@@ -11,10 +12,12 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Throwable;
 
 #[Layout('layouts.user')]
 class BerandaDiet extends Component
@@ -143,7 +146,11 @@ class BerandaDiet extends Component
         $user = Auth::user();
 
         if (! $user instanceof User) {
-            session()->flash('dashboard_error', 'User tidak ditemukan. Silakan login ulang.');
+            session()->flash(
+                'dashboard_error',
+                'User tidak ditemukan. Silakan login ulang.'
+            );
+
             return;
         }
 
@@ -169,7 +176,7 @@ class BerandaDiet extends Component
             ],
             'extra_calories' => [
                 'required',
-                'integer',
+                'numeric',
                 'min:0',
                 'max:10000',
             ],
@@ -197,25 +204,96 @@ class BerandaDiet extends Component
                 'max:500',
             ],
         ], [
-            'extra_food_date.required' => 'Tanggal wajib diisi.',
-            'extra_meal_time.required' => 'Waktu makan wajib dipilih.',
-            'extra_food_name.required' => 'Nama makanan wajib diisi.',
-            'extra_porsi.required' => 'Porsi wajib diisi.',
-            'extra_calories.required' => 'Kalori wajib diisi.',
+            'extra_food_date.required' =>
+                'Tanggal wajib diisi.',
+
+            'extra_meal_time.required' =>
+                'Waktu makan wajib dipilih.',
+
+            'extra_food_name.required' =>
+                'Nama makanan wajib diisi.',
+
+            'extra_porsi.required' =>
+                'Jumlah porsi wajib diisi.',
+
+            'extra_calories.required' =>
+                'Kalori per porsi wajib diisi.',
         ]);
 
-        CatatanMakananHarian::create([
-            'user_id' => $user->id,
-            'tanggal' => $validated['extra_food_date'],
-            'waktu_makan' => $validated['extra_meal_time'],
-            'nama_makanan' => $validated['extra_food_name'],
-            'porsi' => $validated['extra_porsi'],
-            'kalori' => $validated['extra_calories'],
-            'protein' => $validated['extra_protein'] ?? 0,
-            'karbohidrat' => $validated['extra_karbohidrat'] ?? 0,
-            'lemak' => $validated['extra_lemak'] ?? 0,
-            'catatan' => $validated['extra_catatan'] ?? null,
-        ]);
+        try {
+            DB::transaction(function () use (
+                $user,
+                $validated
+            ): void {
+                $foodName = trim(
+                    (string) $validated['extra_food_name']
+                );
+
+                /*
+                 * Simpan atau perbarui makanan pribadi.
+                 * Data ini yang akan dibaca dropdown Meal Plan.
+                 */
+                $this->syncCatatanMakananKeKoleksi(
+                    user: $user,
+                    validated: $validated
+                );
+
+                /*
+                 * Simpan catatan konsumsi harian.
+                 * Data ini yang masuk ke Catatan Hari Ini
+                 * dan perhitungan kalori Dashboard.
+                 */
+                CatatanMakananHarian::create([
+                    'user_id' => $user->id,
+
+                    'tanggal' =>
+                        $validated['extra_food_date'],
+
+                    'waktu_makan' =>
+                        $validated['extra_meal_time'],
+
+                    'nama_makanan' =>
+                        $foodName,
+
+                    'porsi' =>
+                        (float) $validated['extra_porsi'],
+
+                    'kalori' =>
+                        (float) $validated['extra_calories'],
+
+                    'protein' =>
+                        (float) (
+                            $validated['extra_protein']
+                            ?? 0
+                        ),
+
+                    'karbohidrat' =>
+                        (float) (
+                            $validated['extra_karbohidrat']
+                            ?? 0
+                        ),
+
+                    'lemak' =>
+                        (float) (
+                            $validated['extra_lemak']
+                            ?? 0
+                        ),
+
+                    'catatan' =>
+                        $validated['extra_catatan']
+                        ?? null,
+                ]);
+            });
+        } catch (Throwable $exception) {
+            report($exception);
+
+            session()->flash(
+                'dashboard_error',
+                'Catatan gagal disimpan. Data makanan atau kategori belum sesuai.'
+            );
+
+            return;
+        }
 
         $this->reset([
             'extra_food_name',
@@ -227,12 +305,155 @@ class BerandaDiet extends Component
         ]);
 
         $this->extra_porsi = 1;
-        $this->extra_food_date = Carbon::today()->toDateString();
+
+        $this->extra_food_date =
+            Carbon::today()->toDateString();
+
         $this->extra_meal_time = 'sarapan';
 
-        session()->flash('dashboard_success', 'Catatan makanan tambahan berhasil disimpan.');
+        session()->flash(
+            'dashboard_success',
+            'Catatan berhasil disimpan dan makanan sudah tersedia di Meal Plan.'
+        );
 
         $this->loadDashboard();
+    }
+
+    private function resolveDefaultKategoriMakananId(): ?int
+    {
+        $kategoriModel = new KategoriMakanan();
+        $table = $kategoriModel->getTable();
+
+        if (! Schema::hasTable($table)) {
+            return null;
+        }
+
+        $kategori = KategoriMakanan::query()
+            ->orderBy('id')
+            ->first();
+
+        if (! $kategori instanceof KategoriMakanan) {
+            return null;
+        }
+
+        return (int) $kategori->id;
+    }
+
+    private function syncCatatanMakananKeKoleksi(
+        User $user,
+        array $validated
+    ): Makanan {
+        $makananModel = new Makanan();
+        $table = $makananModel->getTable();
+
+        if (! Schema::hasTable($table)) {
+            throw new \RuntimeException(
+                'Tabel makanan belum tersedia.'
+            );
+        }
+
+        $foodName = trim(
+            (string) $validated['extra_food_name']
+        );
+
+        /*
+         * Mencari makanan dengan nama yang sama milik user.
+         * Pada MySQL pencarian ini umumnya tidak membedakan
+         * huruf besar dan kecil.
+         */
+        $makanan = Makanan::query()
+            ->where('user_id', $user->id)
+            ->where('nama', $foodName)
+            ->first();
+
+        $isNewFood = ! $makanan instanceof Makanan;
+
+        if ($isNewFood) {
+            $makanan = new Makanan();
+            $makanan->user_id = $user->id;
+
+            if (
+                Schema::hasColumn(
+                    $table,
+                    'kategori_makanan_id'
+                )
+            ) {
+                $kategoriId =
+                    $this->resolveDefaultKategoriMakananId();
+
+                if ($kategoriId !== null) {
+                    $makanan->kategori_makanan_id =
+                        $kategoriId;
+                }
+            }
+
+            if (
+                Schema::hasColumn(
+                    $table,
+                    'deskripsi'
+                )
+            ) {
+                $makanan->deskripsi =
+                    'Disimpan otomatis dari Catat Makanan Tambahan.';
+            }
+
+            if (
+                Schema::hasColumn(
+                    $table,
+                    'is_public'
+                )
+            ) {
+                $makanan->is_public = false;
+            }
+
+            if (
+                Schema::hasColumn(
+                    $table,
+                    'is_recommended'
+                )
+            ) {
+                $makanan->is_recommended = false;
+            }
+
+            if (
+                Schema::hasColumn(
+                    $table,
+                    'recommended_note'
+                )
+            ) {
+                $makanan->recommended_note = null;
+            }
+        }
+
+        $makanan->nama = $foodName;
+
+        /*
+         * Nilai nutrisi disimpan sebagai nilai per porsi.
+         */
+        $makanan->kalori =
+            (float) $validated['extra_calories'];
+
+        $makanan->protein =
+            (float) (
+                $validated['extra_protein']
+                ?? 0
+            );
+
+        $makanan->karbohidrat =
+            (float) (
+                $validated['extra_karbohidrat']
+                ?? 0
+            );
+
+        $makanan->lemak =
+            (float) (
+                $validated['extra_lemak']
+                ?? 0
+            );
+
+        $makanan->save();
+
+        return $makanan;
     }
 
     public function deleteCatatanMakananHarian(int $id): void
@@ -416,6 +637,14 @@ class BerandaDiet extends Component
             $item->sudah_dimakan = false;
         }
 
+        if (Schema::hasColumn($mealPlanItemTable, 'sudah_dikonsumsi')) {
+            $item->sudah_dikonsumsi = false;
+        }
+
+        if (Schema::hasColumn($mealPlanItemTable, 'dikonsumsi_pada')) {
+            $item->dikonsumsi_pada = null;
+        }
+
         if (Schema::hasColumn($mealPlanItemTable, 'dikonsumsi')) {
             $item->dikonsumsi = false;
         }
@@ -448,14 +677,22 @@ class BerandaDiet extends Component
         $user = Auth::user();
 
         if (! $user instanceof User) {
-            session()->flash('dashboard_error', 'User tidak ditemukan. Silakan login ulang.');
+            session()->flash(
+                'dashboard_error',
+                'User tidak ditemukan. Silakan login ulang.'
+            );
+
             return;
         }
 
         $item = MealPlanItem::find($itemId);
 
         if (! $item instanceof MealPlanItem) {
-            session()->flash('dashboard_error', 'Item meal plan tidak ditemukan.');
+            session()->flash(
+                'dashboard_error',
+                'Item meal plan tidak ditemukan.'
+            );
+
             return;
         }
 
@@ -464,29 +701,45 @@ class BerandaDiet extends Component
         ]);
 
         if (! $mealPlanId) {
-            session()->flash('dashboard_error', 'Relasi meal plan item tidak ditemukan.');
+            session()->flash(
+                'dashboard_error',
+                'Relasi meal plan item tidak ditemukan.'
+            );
+
             return;
         }
 
-        $mealPlan = MealPlan::find($mealPlanId);
+        $mealPlan = MealPlan::find((int) $mealPlanId);
 
         if (! $mealPlan instanceof MealPlan) {
-            session()->flash('dashboard_error', 'Meal plan tidak ditemukan.');
+            session()->flash(
+                'dashboard_error',
+                'Meal plan tidak ditemukan.'
+            );
+
             return;
         }
 
-        $mealPlanUserId = $this->getAttributeValue($mealPlan, [
-            'user_id',
-        ]);
+        $mealPlanUserId = $this->getAttributeValue(
+            $mealPlan,
+            [
+                'user_id',
+            ]
+        );
 
         if ((int) $mealPlanUserId !== (int) $user->id) {
-            session()->flash('dashboard_error', 'Kamu tidak memiliki akses ke item meal plan ini.');
+            session()->flash(
+                'dashboard_error',
+                'Kamu tidak memiliki akses ke item meal plan ini.'
+            );
+
             return;
         }
 
         $table = $item->getTable();
 
         $currentStatus = $this->getAttributeValue($item, [
+            'sudah_dikonsumsi',
             'is_consumed',
             'consumed',
             'sudah_dimakan',
@@ -494,35 +747,49 @@ class BerandaDiet extends Component
             'status',
         ]);
 
-        $isConsumed = $this->isMealPlanItemConsumed($currentStatus);
+        $isConsumed = $this->isMealPlanItemConsumed(
+            $currentStatus
+        );
+
+        $newStatus = ! $isConsumed;
 
         if (Schema::hasColumn($table, 'is_consumed')) {
-            $item->is_consumed = ! $isConsumed;
+            $item->is_consumed = $newStatus;
         }
 
         if (Schema::hasColumn($table, 'consumed')) {
-            $item->consumed = ! $isConsumed;
+            $item->consumed = $newStatus;
         }
 
         if (Schema::hasColumn($table, 'sudah_dimakan')) {
-            $item->sudah_dimakan = ! $isConsumed;
+            $item->sudah_dimakan = $newStatus;
+        }
+
+        if (Schema::hasColumn($table, 'sudah_dikonsumsi')) {
+            $item->sudah_dikonsumsi = $newStatus;
+        }
+
+        if (Schema::hasColumn($table, 'dikonsumsi_pada')) {
+            $item->dikonsumsi_pada = ($newStatus) ? now() : null;
         }
 
         if (Schema::hasColumn($table, 'dikonsumsi')) {
-            $item->dikonsumsi = ! $isConsumed;
+            $item->dikonsumsi = $newStatus;
         }
 
         if (Schema::hasColumn($table, 'status')) {
-            $item->status = $isConsumed ? 'planned' : 'consumed';
+            $item->status = $newStatus
+                ? 'consumed'
+                : 'planned';
         }
 
         $item->save();
 
         session()->flash(
             'dashboard_success',
-            $isConsumed
-                ? 'Menu berhasil ditandai belum dikonsumsi.'
-                : 'Menu berhasil ditandai sudah dikonsumsi.'
+            $newStatus
+                ? 'Menu berhasil ditandai sudah dikonsumsi.'
+                : 'Menu berhasil ditandai belum dikonsumsi.'
         );
 
         $this->loadDashboard();
@@ -604,6 +871,7 @@ class BerandaDiet extends Component
             $totalLemak = $lemak * $porsi;
 
             $status = $this->getAttributeValue($item, [
+                'sudah_dikonsumsi',
                 'is_consumed',
                 'consumed',
                 'sudah_dimakan',

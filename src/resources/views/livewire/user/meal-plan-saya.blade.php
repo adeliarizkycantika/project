@@ -1285,6 +1285,90 @@
                 font-size: 28px;
             }
         }
+    
+        /* meal-plan-select-arrow */
+
+        .meal-select-shell {
+            position: relative;
+            width: 100%;
+        }
+
+        .meal-select-shell
+        .meal-select-control {
+            width: 100%;
+            padding-right: 48px !important;
+
+            cursor: pointer;
+
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+
+            background-image: none !important;
+        }
+
+        .meal-select-arrow {
+            position: absolute;
+            z-index: 4;
+
+            top: 50%;
+            right: 11px;
+
+            width: 28px;
+            height: 28px;
+
+            display: grid;
+            place-items: center;
+
+            border: 1px solid #d4deed;
+            border-radius: 8px;
+
+            color: #587daf;
+            background: #edf3fc;
+
+            pointer-events: none;
+
+            transform: translateY(-50%);
+
+            transition:
+                transform 180ms ease,
+                color 180ms ease,
+                border-color 180ms ease,
+                background 180ms ease;
+        }
+
+        .meal-select-arrow svg {
+            width: 15px;
+            height: 15px;
+            display: block;
+        }
+
+        .meal-select-shell:hover
+        .meal-select-arrow {
+            border-color: #afc2df;
+            background: #e3edfa;
+        }
+
+        .meal-select-shell:focus-within
+        .meal-select-arrow {
+            color: #ffffff;
+            border-color: #789bd0;
+            background: #789bd0;
+
+            transform:
+                translateY(-50%)
+                rotate(180deg);
+        }
+
+        .meal-select-shell:focus-within
+        .meal-select-control {
+            border-color: #789bd0 !important;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(120, 155, 208, 0.15) !important;
+        }
+
     </style>
 
     <div class="mp-stack">
@@ -1991,38 +2075,60 @@
                                     Pilih makanan
                                 </label>
 
-                                <select
-                                    id="selectedMakananId"
-                                    class="mp-select"
-                                    wire:model="selectedMakananId"
+                                <div
+                                    class="meal-select-shell"
+                                    data-meal-select="selectedMakananId"
                                 >
-                                    <option value="">
-                                        Pilih makanan
-                                    </option>
-
-                                    @foreach ($makananOptions as $makanan)
-                                        <option
-                                            value="{{ $makanan['id'] }}"
-                                        >
-                                            {{ $makanan['nama'] }}
-                                            ·
-                                            {{
-                                                number_format(
-                                                    (int) (
-                                                        $makanan[
-                                                            'kalori'
-                                                        ]
-                                                        ?? 0
-                                                    ),
-                                                    0,
-                                                    ',',
-                                                    '.'
-                                                )
-                                            }}
-                                            kkal
+                                    <select
+                                        id="selectedMakananId"
+                                        class="mp-select meal-select-control"
+                                        wire:model="selectedMakananId"
+                                    >
+                                        <option value="">
+                                            Pilih makanan
                                         </option>
-                                    @endforeach
-                                </select>
+                                    
+                                        @foreach ($makananOptions as $makanan)
+                                            <option
+                                                value="{{ $makanan['id'] }}"
+                                            >
+                                                {{ $makanan['nama'] }}
+                                                ·
+                                                {{
+                                                    number_format(
+                                                        (int) (
+                                                            $makanan[
+                                                                'kalori'
+                                                            ]
+                                                            ?? 0
+                                                        ),
+                                                        0,
+                                                        ',',
+                                                        '.'
+                                                    )
+                                                }}
+                                                kkal
+                                            </option>
+                                        @endforeach
+                                    </select>
+
+                                    <span
+                                        class="meal-select-arrow"
+                                        aria-hidden="true"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="m7 10 5 5 5-5" />
+                                        </svg>
+                                    </span>
+                                </div>
 
                                 @error('selectedMakananId')
                                     <span class="mp-field-error">
@@ -2048,17 +2154,39 @@
                                         Waktu makan
                                     </label>
 
-                                    <select
-                                        id="selectedMealTime"
-                                        class="mp-select"
-                                        wire:model="selectedMealTime"
+                                    <div
+                                        class="meal-select-shell"
+                                        data-meal-select="selectedMealTime"
                                     >
-                                        @foreach ($mealTimeOptions as $value => $label)
-                                            <option value="{{ $value }}">
-                                                {{ $label }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                        <select
+                                            id="selectedMealTime"
+                                            class="mp-select meal-select-control"
+                                            wire:model="selectedMealTime"
+                                        >
+                                            @foreach ($mealTimeOptions as $value => $label)
+                                                <option value="{{ $value }}">
+                                                    {{ $label }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+
+                                        <span
+                                            class="meal-select-arrow"
+                                            aria-hidden="true"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2.2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            >
+                                                <path d="m7 10 5 5 5-5" />
+                                            </svg>
+                                        </span>
+                                    </div>
 
                                     @error('selectedMealTime')
                                         <span class="mp-field-error">

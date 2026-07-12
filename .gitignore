@@ -4,3 +4,8 @@ db/data/*
 .env
 /vendor
 /node_modules
+
+# Local backup files
+*.bak
+*-before-*.php
+*-before-*.blade.php

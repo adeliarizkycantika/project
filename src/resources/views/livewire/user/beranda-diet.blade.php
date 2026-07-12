@@ -10,10 +10,8 @@
         $displayRemainingCalories = abs($remainingCalories);
         $isOverTarget = $remainingCalories < 0;
 
-        $recommendationImage = data_get(
-            $siteSetting ?? null,
-            'recommendation_image_url'
-        );
+        $recommendationImage =
+            $siteSetting?->recommendation_image_url;
 
         $mealSchedule = collect($jadwalMakanHariIni ?? []);
 
@@ -1254,6 +1252,189 @@
                 font-size: 28px;
             }
         }
+    
+        /* dashboard-consumed-button-fix */
+        .dashboard-consumed-button {
+            position: relative;
+            z-index: 100;
+            pointer-events: auto !important;
+            touch-action: manipulation;
+            appearance: none;
+
+            min-height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 8px 12px;
+            border: 1px solid #c8d8ef;
+            border-radius: 9px;
+
+            color: #5579ad;
+            background: #e8f1ff;
+
+            outline: none;
+            font-family: inherit;
+            font-size: 9px;
+            line-height: 1;
+            font-weight: 700;
+            white-space: nowrap;
+
+            cursor: pointer;
+
+            transition:
+                transform 180ms ease,
+                color 180ms ease,
+                background 180ms ease,
+                border-color 180ms ease,
+                box-shadow 180ms ease;
+        }
+
+        .dashboard-consumed-button:hover {
+            color: #3f659b;
+            border-color: #7c9fd3;
+            background: #dce9fb;
+            box-shadow:
+                0 8px 18px rgba(85, 121, 173, 0.16);
+            transform: translateY(-1px);
+        }
+
+        .dashboard-consumed-button:focus-visible {
+            border-color: #7c9fd3;
+            box-shadow:
+                0 0 0 3px rgba(124, 159, 211, 0.2);
+        }
+
+        .dashboard-consumed-button.is-consumed {
+            color: #347a63;
+            border-color: #b9dfd1;
+            background: #e8f8f1;
+        }
+
+        .dashboard-consumed-button.is-consumed:hover {
+            color: #28644f;
+            border-color: #7fc7b2;
+            background: #d9f2e9;
+        }
+
+        .dashboard-consumed-button:disabled {
+            opacity: 0.58;
+            cursor: wait;
+            transform: none;
+        }
+
+        .dashboard-consumed-content {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            pointer-events: none;
+        }
+
+        .dashboard-status-icon {
+            width: 15px;
+            height: 15px;
+            display: inline-grid;
+            place-items: center;
+
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.78);
+
+            font-size: 9px;
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        /*
+         * Elemen dekorasi kartu tidak boleh menutup tombol.
+         */
+        .meal-item::before,
+        .meal-item::after,
+        .st-meal-item::before,
+        .st-meal-item::after,
+        .st-meal-card::before,
+        .st-meal-card::after,
+        .st-slot-card::before,
+        .st-slot-card::after {
+            pointer-events: none !important;
+        }
+
+        .meal-item,
+        .st-meal-item,
+        .st-meal-card,
+        .st-slot-card {
+            position: relative;
+        }
+
+        .meal-item > *,
+        .st-meal-item > *,
+        .st-meal-card > *,
+        .st-slot-card > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        @media (max-width: 720px) {
+            .dashboard-consumed-button {
+                width: 100%;
+                min-height: 40px;
+                font-size: 10px;
+            }
+        }
+
+    
+        /* dashboard-recommendation-image-fix */
+
+        .st-food-visual {
+            position: relative !important;
+            overflow: hidden !important;
+            isolation: isolate;
+        }
+
+        .st-food-visual::before,
+        .st-food-visual::after {
+            z-index: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .st-food-image {
+            position: absolute !important;
+            z-index: 1 !important;
+            inset: 0 !important;
+
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 100% !important;
+            min-height: 100% !important;
+
+            display: block !important;
+
+            object-fit: cover !important;
+            object-position: center !important;
+
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        .st-food-placeholder {
+            position: relative;
+            z-index: 1;
+
+            width: 100%;
+            height: 100%;
+            min-height: 130px;
+
+            display: grid;
+            place-items: center;
+
+            font-size: 38px;
+        }
+
+        .st-food-calorie-badge {
+            position: absolute;
+            z-index: 3 !important;
+        }
+
     </style>
 
     <div class="st-stack">
@@ -1631,29 +1812,47 @@
                                             <div class="st-slot-item-actions">
                                                 <button
                                                     type="button"
-                                                    class="st-status-button {{
-                                                        ! empty(
-                                                            $item['is_consumed']
-                                                        )
+                                                    class="dashboard-consumed-button {
+                                                        ! empty($item['is_consumed'])
                                                             ? 'is-consumed'
-                                                            : 'is-planned'
-                                                    }}"
-                                                    wire:click="toggleMealPlanItemConsumed({{ (int) ($item['id'] ?? 0) }})"
+                                                            : 'is-pending'
+                                                    }"
+                                                    wire:key="dashboard-consumed-{{ (int) ($item['id'] ?? 0) }}"
+                                                    wire:click.stop="toggleMealPlanItemConsumed({{ (int) ($item['id'] ?? 0) }})"
                                                     wire:loading.attr="disabled"
+                                                    wire:target="toggleMealPlanItemConsumed"
+                                                    aria-pressed="{
+                                                        ! empty($item['is_consumed'])
+                                                            ? 'true'
+                                                            : 'false'
+                                                    }"
                                                 >
-                                                    @if (! empty($item['is_consumed']))
-                                                        <x-heroicon-o-check-circle
-                                                            style="width: 13px; height: 13px;"
-                                                        />
-
-                                                        <span>Sudah dimakan</span>
-                                                    @else
-                                                        <x-heroicon-o-clock
-                                                            style="width: 13px; height: 13px;"
-                                                        />
-
-                                                        <span>Belum dimakan</span>
-                                                    @endif
+                                                    <span
+                                                        class="dashboard-consumed-content"
+                                                        wire:loading.remove
+                                                        wire:target="toggleMealPlanItemConsumed"
+                                                    >
+                                                        @if (! empty($item['is_consumed']))
+                                                            <span class="dashboard-status-icon">
+                                                                ✓
+                                                            </span>
+                                                
+                                                            <span>Sudah dimakan</span>
+                                                        @else
+                                                            <span class="dashboard-status-icon">
+                                                                ◷
+                                                            </span>
+                                                
+                                                            <span>Belum dimakan</span>
+                                                        @endif
+                                                    </span>
+                                                
+                                                    <span
+                                                        wire:loading
+                                                        wire:target="toggleMealPlanItemConsumed"
+                                                    >
+                                                        Memproses...
+                                                    </span>
                                                 </button>
                                             </div>
                                         </article>

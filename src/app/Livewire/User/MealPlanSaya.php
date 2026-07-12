@@ -198,6 +198,14 @@ class MealPlanSaya extends Component
             $item->sudah_dimakan = false;
         }
 
+        if (Schema::hasColumn($mealPlanItemTable, 'sudah_dikonsumsi')) {
+            $item->sudah_dikonsumsi = false;
+        }
+
+        if (Schema::hasColumn($mealPlanItemTable, 'dikonsumsi_pada')) {
+            $item->dikonsumsi_pada = null;
+        }
+
         if (Schema::hasColumn($mealPlanItemTable, 'dikonsumsi')) {
             $item->dikonsumsi = false;
         }
@@ -251,6 +259,7 @@ class MealPlanSaya extends Component
         $table = $item->getTable();
 
         $currentStatus = $this->getAttributeValue($item, [
+            'sudah_dikonsumsi',
             'is_consumed',
             'consumed',
             'sudah_dimakan',
@@ -270,6 +279,14 @@ class MealPlanSaya extends Component
 
         if (Schema::hasColumn($table, 'sudah_dimakan')) {
             $item->sudah_dimakan = ! $isConsumed;
+        }
+
+        if (Schema::hasColumn($table, 'sudah_dikonsumsi')) {
+            $item->sudah_dikonsumsi = ! $isConsumed;
+        }
+
+        if (Schema::hasColumn($table, 'dikonsumsi_pada')) {
+            $item->dikonsumsi_pada = (! $isConsumed) ? now() : null;
         }
 
         if (Schema::hasColumn($table, 'dikonsumsi')) {
@@ -558,6 +575,7 @@ class MealPlanSaya extends Component
             $mealTimeKey = $this->normalizeMealTimeKey($mealTimeRaw);
 
             $status = $this->getAttributeValue($item, [
+                'sudah_dikonsumsi',
                 'is_consumed',
                 'consumed',
                 'sudah_dimakan',
