@@ -10,11 +10,17 @@ use Throwable;
 
 class AuthAppearanceServiceProvider extends ServiceProvider
 {
+    /**
+     * Register service aplikasi.
+     */
     public function register(): void
     {
         //
     }
 
+    /**
+     * Mengirim pengaturan tampilan website ke Blade.
+     */
     public function boot(): void
     {
         View::composer([
@@ -23,19 +29,16 @@ class AuthAppearanceServiceProvider extends ServiceProvider
             'livewire.user.*',
             'user.*',
         ], function ($view): void {
-            static $resolvedSetting = null;
-
-            if (! $resolvedSetting instanceof SiteSetting) {
-                $resolvedSetting = $this->resolveSiteSetting();
-            }
-
             $view->with(
                 'siteSetting',
-                $resolvedSetting
+                $this->resolveSiteSetting()
             );
         });
     }
 
+    /**
+     * Mengambil pengaturan website dari database.
+     */
     private function resolveSiteSetting(): SiteSetting
     {
         try {
@@ -51,6 +54,10 @@ class AuthAppearanceServiceProvider extends ServiceProvider
         }
     }
 
+    /**
+     * Pengaturan cadangan ketika tabel belum tersedia
+     * atau belum memiliki data.
+     */
     private function defaultSetting(): SiteSetting
     {
         return new SiteSetting([

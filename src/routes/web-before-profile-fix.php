@@ -5,15 +5,8 @@ use App\Livewire\User\BerandaDiet;
 use App\Livewire\User\DaftarBelanjaSaya;
 use App\Livewire\User\MakananSaya;
 use App\Livewire\User\MealPlanSaya;
-use App\Livewire\User\ProfileSaya;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
-/*
-|--------------------------------------------------------------------------
-| Halaman Utama
-|--------------------------------------------------------------------------
-*/
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -31,19 +24,7 @@ Route::get('/home', function () {
     return redirect()->route('login');
 })->name('home.redirect');
 
-/*
-|--------------------------------------------------------------------------
-| Guest Routes
-|--------------------------------------------------------------------------
-*/
-
 Route::middleware('guest')->group(function () {
-    /*
-    |--------------------------------------------------------------------------
-    | Login dan Register
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/login', [AuthController::class, 'showLoginForm'])
         ->name('login');
 
@@ -62,15 +43,11 @@ Route::middleware('guest')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get(
-        '/auth/google/redirect',
-        [AuthController::class, 'redirectToGoogle']
-    )->name('google.redirect');
+    Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle'])
+        ->name('google.redirect');
 
-    Route::get(
-        '/auth/google/callback',
-        [AuthController::class, 'handleGoogleCallback']
-    )->name('google.callback');
+    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])
+        ->name('google.callback');
 
     /*
     |--------------------------------------------------------------------------
@@ -78,62 +55,30 @@ Route::middleware('guest')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get(
-        '/forgot-password',
-        [AuthController::class, 'showForgotPasswordForm']
-    )->name('password.request');
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])
+        ->name('password.request');
 
-    Route::post(
-        '/forgot-password',
-        [AuthController::class, 'sendResetLinkEmail']
-    )->name('password.email');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])
+        ->name('password.email');
 
-    Route::get(
-        '/reset-password/{token}',
-        [AuthController::class, 'showResetPasswordForm']
-    )->name('password.reset');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])
+        ->name('password.reset');
 
-    Route::post(
-        '/reset-password',
-        [AuthController::class, 'resetPassword']
-    )->name('password.update');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+        ->name('password.update');
 });
-
-/*
-|--------------------------------------------------------------------------
-| Logout
-|--------------------------------------------------------------------------
-*/
 
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-/*
-|--------------------------------------------------------------------------
-| User Routes
-|--------------------------------------------------------------------------
-*/
-
 Route::middleware('auth')->group(function () {
-    /*
-    |--------------------------------------------------------------------------
-    | Dashboard
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/dashboard', BerandaDiet::class)
         ->name('user.dashboard');
 
     Route::get('/beranda', function () {
         return redirect()->route('user.dashboard');
     })->name('user.beranda.redirect');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Makanan
-    |--------------------------------------------------------------------------
-    */
 
     Route::get('/makanan-saya', MakananSaya::class)
         ->name('user.makanan');
@@ -142,24 +87,12 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('user.makanan');
     })->name('user.makanan.redirect');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Meal Plan
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/meal-plan-saya', MealPlanSaya::class)
         ->name('user.meal-plan');
 
     Route::get('/meal-plan', function () {
         return redirect()->route('user.meal-plan');
     })->name('user.meal-plan.redirect');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Daftar Belanja
-    |--------------------------------------------------------------------------
-    */
 
     Route::get('/daftar-belanja-saya', DaftarBelanjaSaya::class)
         ->name('user.daftar-belanja');
@@ -168,14 +101,9 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('user.daftar-belanja');
     })->name('user.daftar-belanja.redirect');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Profil
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/profil-saya', ProfileSaya::class)
-        ->name('user.profil');
+    Route::get('/profil-saya', function () {
+        return view('user.profil-saya-page');
+    })->name('user.profil');
 
     Route::get('/profil', function () {
         return redirect()->route('user.profil');

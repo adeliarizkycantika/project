@@ -1,899 +1,2200 @@
-<div class="meal-plan-page">
+<div class="mp-page">
+    @php
+        $jumlahMenu = (int) ($summary['jumlah_menu'] ?? 0);
+        $totalKalori = (int) ($summary['total_kalori'] ?? 0);
+        $kaloriDikonsumsi = (int) ($summary['consumed_kalori'] ?? 0);
+
+        $totalProtein = (float) ($summary['total_protein'] ?? 0);
+        $totalKarbohidrat = (float) ($summary['total_karbohidrat'] ?? 0);
+        $totalLemak = (float) ($summary['total_lemak'] ?? 0);
+
+        $jumlahDikonsumsi = collect($mealPlanItems)
+            ->where('is_consumed', true)
+            ->count();
+
+        $persentaseDikonsumsi = $totalKalori > 0
+            ? min(
+                100,
+                (int) round(
+                    ($kaloriDikonsumsi / $totalKalori) * 100
+                )
+            )
+            : 0;
+
+        $isToday = $selectedDate === now()->toDateString();
+
+        $groupTones = [
+            'sarapan' => 'blue',
+            'makan_siang' => 'violet',
+            'makan_malam' => 'mint',
+            'cemilan' => 'peach',
+        ];
+
+        $groupTimes = [
+            'sarapan' => '07.00 – 09.00',
+            'makan_siang' => '12.00 – 14.00',
+            'makan_malam' => '18.00 – 20.00',
+            'cemilan' => 'Fleksibel',
+        ];
+    @endphp
+
     <style>
-        .meal-plan-page {
-            --pm-primary: #ec6f9f;
-            --pm-primary-dark: #d94f84;
-            --pm-green: #72b88b;
-            --pm-green-dark: #3f8f61;
-            --pm-cream: #fff8f2;
-            --pm-soft: #fff1f6;
-            --pm-border: #f4d9e3;
-            --pm-text: #243127;
-            --pm-muted: #7b827d;
-            --pm-card: #ffffff;
+        .mp-page {
+            --mp-blue: #7c9fd3;
+            --mp-blue-dark: #5579ad;
+            --mp-blue-soft: #e8f1ff;
 
-            color: var(--pm-text);
+            --mp-violet: #a697d6;
+            --mp-violet-dark: #7160a5;
+            --mp-violet-soft: #f0ecff;
+
+            --mp-mint: #7fc7b2;
+            --mp-mint-dark: #438674;
+            --mp-mint-soft: #e6f8f2;
+
+            --mp-peach: #eab186;
+            --mp-peach-dark: #a76739;
+            --mp-peach-soft: #fff1e6;
+
+            --mp-yellow: #ddb85f;
+            --mp-yellow-dark: #82631f;
+            --mp-yellow-soft: #fff8df;
+
+            --mp-red: #ba1a1a;
+            --mp-red-dark: #8f1919;
+            --mp-red-soft: #fff2f0;
+
+            --mp-green: #347a63;
+            --mp-green-soft: #e8f8f1;
+
+            --mp-text: #191c20;
+            --mp-muted: #626a76;
+            --mp-faint: #8a919d;
+
+            --mp-border: #dfe3eb;
+            --mp-border-strong: #cbd2dd;
+
+            --mp-surface: #ffffff;
+            --mp-surface-soft: #f7f8fc;
+            --mp-background: #fbfcff;
+
+            --mp-shadow:
+                0 12px 34px rgba(68, 83, 110, 0.07);
+
+            --mp-shadow-hover:
+                0 20px 48px rgba(68, 83, 110, 0.13);
+
+            width: 100%;
+            color: var(--mp-text);
         }
 
-        .meal-hero {
-            position: relative;
-            overflow: hidden;
-            border-radius: 30px;
-            padding: 30px;
-            margin-bottom: 22px;
-            background:
-                radial-gradient(circle at 9% 14%, rgba(255, 255, 255, .85) 0, rgba(255, 255, 255, 0) 30%),
-                linear-gradient(135deg, #ffe5ef 0%, #fff8f2 45%, #e7f6eb 100%);
-            border: 1px solid rgba(236, 111, 159, .22);
-            box-shadow: 0 18px 45px rgba(210, 98, 137, .13);
+        .mp-page * {
+            box-sizing: border-box;
         }
 
-        .meal-hero::after {
-            content: "";
-            position: absolute;
-            width: 220px;
-            height: 220px;
-            border-radius: 999px;
-            right: -80px;
-            bottom: -90px;
-            background: rgba(236, 111, 159, .13);
+        .mp-stack {
+            display: grid;
+            gap: 24px;
         }
 
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 20px;
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Tombol
+        |--------------------------------------------------------------------------
+        */
 
-        .hero-eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 13px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .72);
-            color: var(--pm-primary-dark);
-            font-weight: 900;
-            font-size: 13px;
-            margin-bottom: 16px;
-        }
-
-        .hero-title {
-            margin: 0;
-            font-size: clamp(30px, 4vw, 46px);
-            line-height: 1.04;
-            letter-spacing: -1.5px;
-            color: #232a25;
-        }
-
-        .hero-title span {
-            color: var(--pm-primary-dark);
-        }
-
-        .hero-desc {
-            max-width: 720px;
-            margin: 14px 0 0;
-            color: #66706a;
-            font-size: 15px;
-            line-height: 1.7;
-        }
-
-        .btn-main,
-        .btn-soft,
-        .btn-danger,
-        .btn-green {
-            border: 0;
-            outline: none;
-            cursor: pointer;
-            text-decoration: none;
+        .mp-button {
+            min-height: 43px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            min-height: 42px;
-            padding: 11px 16px;
-            border-radius: 999px;
-            font-weight: 900;
-            font-size: 13px;
-            transition: .2s ease;
+            padding: 10px 17px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            outline: none;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 11px;
+            line-height: 1.2;
+            font-weight: 700;
             white-space: nowrap;
+            transition:
+                transform 180ms ease,
+                box-shadow 180ms ease,
+                background 180ms ease,
+                border-color 180ms ease,
+                opacity 180ms ease;
         }
 
-        .btn-main {
-            color: #fff;
-            background: linear-gradient(135deg, var(--pm-primary), var(--pm-primary-dark));
-            box-shadow: 0 12px 24px rgba(217, 79, 132, .24);
-        }
-
-        .btn-green {
-            color: #fff;
-            background: linear-gradient(135deg, var(--pm-green), var(--pm-green-dark));
-            box-shadow: 0 12px 24px rgba(63, 143, 97, .2);
-        }
-
-        .btn-soft {
-            color: var(--pm-primary-dark);
-            background: rgba(255, 255, 255, .85);
-            border: 1px solid rgba(236, 111, 159, .2);
-        }
-
-        .btn-danger {
-            color: #cf325f;
-            background: #fff0f4;
-            border: 1px solid #ffd3df;
-        }
-
-        .btn-main:hover,
-        .btn-green:hover {
+        .mp-button:hover {
             transform: translateY(-1px);
         }
 
-        .btn-main:disabled,
-        .btn-green:disabled,
-        .btn-soft:disabled,
-        .btn-danger:disabled {
-            opacity: .65;
-            cursor: not-allowed;
+        .mp-button:disabled {
+            cursor: wait;
+            opacity: 0.58;
             transform: none;
         }
 
-        .alert-success,
-        .alert-error {
-            border-radius: 18px;
-            padding: 14px 16px;
+        .mp-button svg {
+            width: 17px;
+            height: 17px;
+            flex: 0 0 17px;
+        }
+
+        .mp-button-primary {
+            color: #ffffff;
+            background: var(--mp-blue);
+            box-shadow:
+                0 10px 22px rgba(124, 159, 211, 0.24);
+        }
+
+        .mp-button-primary:hover {
+            background: var(--mp-blue-dark);
+        }
+
+        .mp-button-outline {
+            color: var(--mp-blue-dark);
+            border-color: rgba(85, 121, 173, 0.48);
+            background: #ffffff;
+        }
+
+        .mp-button-outline:hover {
+            background: var(--mp-blue-soft);
+        }
+
+        .mp-button-soft {
+            color: var(--mp-muted);
+            border-color: var(--mp-border);
+            background: var(--mp-surface-soft);
+        }
+
+        .mp-button-soft:hover {
+            color: var(--mp-text);
+            border-color: var(--mp-border-strong);
+            background: #ffffff;
+        }
+
+        .mp-button-success {
+            color: #ffffff;
+            background: var(--mp-mint-dark);
+        }
+
+        .mp-button-success:hover {
+            background: #356f60;
+        }
+
+        .mp-button-danger {
+            color: var(--mp-red);
+            border-color: #efb8b4;
+            background: var(--mp-red-soft);
+        }
+
+        .mp-button-danger:hover {
+            color: #ffffff;
+            border-color: var(--mp-red);
+            background: var(--mp-red);
+        }
+
+        .mp-button-block {
+            width: 100%;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Hero
+        |--------------------------------------------------------------------------
+        */
+
+        .mp-hero {
+            position: relative;
+            min-height: 300px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding: 36px;
+            border: 1px solid rgba(124, 159, 211, 0.18);
+            border-radius: 22px;
+            background:
+                radial-gradient(
+                    circle at 90% 4%,
+                    rgba(255, 255, 255, 0.72),
+                    transparent 34%
+                ),
+                linear-gradient(
+                    135deg,
+                    #e8e3ff 0%,
+                    #dce8ff 52%,
+                    #d2f4e9 100%
+                );
+            box-shadow:
+                0 16px 40px rgba(83, 104, 140, 0.12);
+        }
+
+        .mp-hero::before,
+        .mp-hero::after {
+            content: "";
+            position: absolute;
+            border-radius: 999px;
+            pointer-events: none;
+        }
+
+        .mp-hero::before {
+            top: -110px;
+            right: -70px;
+            width: 280px;
+            height: 280px;
+            background: rgba(124, 159, 211, 0.18);
+        }
+
+        .mp-hero::after {
+            right: 18%;
+            bottom: -110px;
+            width: 190px;
+            height: 190px;
+            background: rgba(127, 199, 178, 0.22);
+        }
+
+        .mp-hero-layout {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            display: grid;
+            grid-template-columns:
+                minmax(0, 1.35fr)
+                minmax(300px, 0.65fr);
+            align-items: center;
+            gap: 34px;
+        }
+
+        .mp-hero-content {
+            max-width: 720px;
+        }
+
+        .mp-kicker {
+            min-height: 31px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 11px;
+            border: 1px solid rgba(85, 121, 173, 0.22);
+            border-radius: 999px;
+            color: var(--mp-blue-dark);
+            background: rgba(255, 255, 255, 0.68);
+            backdrop-filter: blur(8px);
+            font-size: 10px;
+            line-height: 1;
+            font-weight: 700;
+        }
+
+        .mp-kicker svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .mp-hero-title {
+            max-width: 700px;
+            margin: 18px 0 0;
+            color: var(--mp-text);
+            font-size: clamp(34px, 4vw, 48px);
+            line-height: 1.1;
+            font-weight: 700;
+            letter-spacing: -0.045em;
+        }
+
+        .mp-hero-title span {
+            color: var(--mp-blue-dark);
+        }
+
+        .mp-hero-description {
+            max-width: 620px;
+            margin: 15px 0 0;
+            color: #505967;
             font-size: 13px;
-            font-weight: 800;
-            margin-bottom: 16px;
+            line-height: 1.75;
         }
 
-        .alert-success {
-            background: #edf9f0;
-            color: #2f7a4d;
-            border: 1px solid #ccebd5;
-        }
-
-        .alert-error {
-            background: #fff0f4;
-            color: #c5325d;
-            border: 1px solid #ffd4df;
-        }
-
-        .date-card {
-            border-radius: 26px;
-            background: #fff;
-            border: 1px solid #f0e2e6;
-            box-shadow: 0 14px 36px rgba(37, 44, 39, .06);
-            padding: 20px;
-            margin-bottom: 22px;
+        .mp-hero-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 14px;
             flex-wrap: wrap;
-        }
-
-        .date-nav {
-            display: flex;
-            align-items: center;
             gap: 10px;
-            flex-wrap: wrap;
+            margin-top: 24px;
         }
 
-        .date-title {
+        .mp-hero-progress {
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.78);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.62);
+            box-shadow:
+                0 14px 30px rgba(68, 83, 110, 0.08);
+            backdrop-filter: blur(12px);
+        }
+
+        .mp-progress-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .mp-progress-title {
             margin: 0;
-            font-size: 18px;
-            font-weight: 900;
-            color: #242c26;
-        }
-
-        .date-subtitle {
-            margin: 5px 0 0;
-            color: var(--pm-muted);
+            color: var(--mp-text);
             font-size: 13px;
             font-weight: 700;
         }
 
-        .content-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr);
-            gap: 22px;
-            margin-bottom: 22px;
-        }
-
-        .content-card {
-            border-radius: 26px;
-            background: var(--pm-card);
-            border: 1px solid #f0e2e6;
-            box-shadow: 0 14px 36px rgba(37, 44, 39, .06);
-            overflow: hidden;
-            margin-bottom: 22px;
-        }
-
-        .card-head {
-            padding: 22px 24px;
-            border-bottom: 1px solid #f3e6ea;
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 16px;
-        }
-
-        .card-title {
-            margin: 0;
-            font-size: 20px;
-            line-height: 1.2;
-            letter-spacing: -.3px;
-            color: #242c26;
-        }
-
-        .card-subtitle {
-            margin: 7px 0 0;
-            color: var(--pm-muted);
-            font-size: 13px;
+        .mp-progress-copy {
+            margin: 5px 0 0;
+            color: var(--mp-muted);
+            font-size: 9px;
             line-height: 1.5;
         }
 
-        .card-body {
-            padding: 22px 24px 24px;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-            margin-bottom: 22px;
-        }
-
-        .summary-card {
-            border-radius: 22px;
-            background: #fff;
-            border: 1px solid #f0e2e6;
-            box-shadow: 0 12px 30px rgba(37, 44, 39, .05);
-            padding: 18px;
-        }
-
-        .summary-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 16px;
-            display: grid;
-            place-items: center;
-            background: #fff0f6;
-            color: var(--pm-primary-dark);
-            font-size: 19px;
-            margin-bottom: 12px;
-        }
-
-        .summary-value {
-            font-size: 24px;
-            font-weight: 950;
-            color: #242c26;
-            letter-spacing: -.5px;
+        .mp-progress-value-text {
+            color: var(--mp-blue-dark);
+            font-size: 22px;
             line-height: 1;
+            font-weight: 700;
         }
 
-        .summary-label {
-            margin-top: 7px;
-            color: var(--pm-muted);
-            font-size: 12px;
-            font-weight: 800;
+        .mp-progress-track {
+            width: 100%;
+            height: 10px;
+            overflow: hidden;
+            margin-top: 17px;
+            border-radius: 999px;
+            background: rgba(212, 218, 228, 0.78);
         }
 
-        .form-grid {
+        .mp-progress-bar {
+            height: 100%;
+            border-radius: inherit;
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--mp-blue),
+                    var(--mp-violet),
+                    var(--mp-mint)
+                );
+            transition: width 350ms ease;
+        }
+
+        .mp-progress-meta {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 17px;
+        }
+
+        .mp-progress-stat {
+            padding: 11px;
+            border: 1px solid rgba(203, 210, 221, 0.78);
+            border-radius: 11px;
+            background: rgba(255, 255, 255, 0.78);
+        }
+
+        .mp-progress-stat strong {
+            display: block;
+            color: var(--mp-text);
+            font-size: 14px;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+
+        .mp-progress-stat span {
+            display: block;
+            margin-top: 4px;
+            color: var(--mp-muted);
+            font-size: 8px;
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Alert
+        |--------------------------------------------------------------------------
+        */
+
+        .mp-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 11px;
+            padding: 14px 16px;
+            border: 1px solid var(--mp-border);
+            border-radius: 14px;
+            font-size: 11px;
+            line-height: 1.6;
+            font-weight: 600;
+        }
+
+        .mp-alert svg {
+            width: 19px;
+            height: 19px;
+            flex: 0 0 19px;
+        }
+
+        .mp-alert-success {
+            color: var(--mp-green);
+            border-color: #badfd2;
+            background: var(--mp-green-soft);
+        }
+
+        .mp-alert-error {
+            color: var(--mp-red-dark);
+            border-color: #efb8b4;
+            background: var(--mp-red-soft);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Navigasi tanggal
+        |--------------------------------------------------------------------------
+        */
+
+        .mp-date-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 22px;
+            padding: 18px 20px;
+            border: 1px solid var(--mp-border);
+            border-radius: 18px;
+            background: #ffffff;
+            box-shadow: var(--mp-shadow);
+        }
+
+        .mp-date-copy {
+            min-width: 0;
+        }
+
+        .mp-date-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mp-date-icon {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 13px;
+            color: var(--mp-blue-dark);
+            background: var(--mp-blue-soft);
+        }
+
+        .mp-date-icon svg {
+            width: 21px;
+            height: 21px;
+        }
+
+        .mp-date-title {
+            margin: 0;
+            color: var(--mp-text);
+            font-size: 15px;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+
+        .mp-date-subtitle {
+            margin: 4px 0 0;
+            color: var(--mp-muted);
+            font-size: 9px;
+            line-height: 1.5;
+        }
+
+        .mp-date-controls {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .mp-date-input {
+            min-height: 43px;
+            min-width: 170px;
+            padding: 9px 12px;
+            border: 1px solid var(--mp-border-strong);
+            border-radius: 10px;
+            color: var(--mp-text);
+            background: #fbfcff;
+            outline: none;
+            font-size: 10px;
+        }
+
+        .mp-date-input:focus {
+            border-color: var(--mp-blue);
+            box-shadow:
+                0 0 0 3px rgba(124, 159, 211, 0.14);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ringkasan
+        |--------------------------------------------------------------------------
+        */
+
+        .mp-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 13px;
+        }
+
+        .mp-summary-card {
+            min-width: 0;
+            padding: 16px;
+            border: 1px solid var(--mp-border);
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: var(--mp-shadow);
+        }
+
+        .mp-summary-icon {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            color: var(--mp-blue-dark);
+            background: var(--mp-blue-soft);
+        }
+
+        .mp-summary-card:nth-child(2)
+        .mp-summary-icon {
+            color: var(--mp-peach-dark);
+            background: var(--mp-peach-soft);
+        }
+
+        .mp-summary-card:nth-child(3)
+        .mp-summary-icon {
+            color: var(--mp-green);
+            background: var(--mp-green-soft);
+        }
+
+        .mp-summary-card:nth-child(4)
+        .mp-summary-icon {
+            color: var(--mp-violet-dark);
+            background: var(--mp-violet-soft);
+        }
+
+        .mp-summary-card:nth-child(5)
+        .mp-summary-icon {
+            color: var(--mp-mint-dark);
+            background: var(--mp-mint-soft);
+        }
+
+        .mp-summary-card:nth-child(6)
+        .mp-summary-icon {
+            color: var(--mp-yellow-dark);
+            background: var(--mp-yellow-soft);
+        }
+
+        .mp-summary-icon svg {
+            width: 19px;
+            height: 19px;
+        }
+
+        .mp-summary-value {
+            display: block;
+            overflow: hidden;
+            margin-top: 12px;
+            color: var(--mp-text);
+            font-size: 18px;
+            line-height: 1.15;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .mp-summary-label {
+            display: block;
+            margin-top: 5px;
+            color: var(--mp-muted);
+            font-size: 8px;
+            line-height: 1.45;
+            font-weight: 600;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Panel
+        |--------------------------------------------------------------------------
+        */
+
+        .mp-content-grid {
+            display: grid;
+            grid-template-columns:
+                minmax(0, 1.45fr)
+                minmax(310px, 0.55fr);
+            align-items: start;
+            gap: 24px;
+        }
+
+        .mp-panel {
+            overflow: hidden;
+            border: 1px solid var(--mp-border);
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.97);
+            box-shadow: var(--mp-shadow);
+        }
+
+        .mp-panel-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 22px 24px;
+            border-bottom: 1px solid var(--mp-border);
+        }
+
+        .mp-panel-body {
+            padding: 24px;
+        }
+
+        .mp-section-title {
+            margin: 0;
+            color: var(--mp-text);
+            font-size: 20px;
+            line-height: 1.35;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .mp-section-description {
+            max-width: 720px;
+            margin: 6px 0 0;
+            color: var(--mp-muted);
+            font-size: 11px;
+            line-height: 1.65;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Grup waktu makan
+        |--------------------------------------------------------------------------
+        */
+
+        .mp-group-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .mp-group {
+            overflow: hidden;
+            border: 1px solid var(--mp-border);
+            border-radius: 17px;
+            background: var(--mp-background);
+        }
+
+        .mp-group-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 15px 16px;
+            border-bottom: 1px solid var(--mp-border);
+            background: #ffffff;
+        }
+
+        .mp-group-title-wrap {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .mp-group-icon {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            color: var(--mp-blue-dark);
+            background: var(--mp-blue-soft);
+            font-size: 17px;
+        }
+
+        .mp-group[data-tone="violet"]
+        .mp-group-icon {
+            color: var(--mp-violet-dark);
+            background: var(--mp-violet-soft);
+        }
+
+        .mp-group[data-tone="mint"]
+        .mp-group-icon {
+            color: var(--mp-mint-dark);
+            background: var(--mp-mint-soft);
+        }
+
+        .mp-group[data-tone="peach"]
+        .mp-group-icon {
+            color: var(--mp-peach-dark);
+            background: var(--mp-peach-soft);
+        }
+
+        .mp-group-title {
+            margin: 0;
+            color: var(--mp-text);
+            font-size: 12px;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+
+        .mp-group-time {
+            margin: 3px 0 0;
+            color: var(--mp-faint);
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        .mp-group-total {
+            min-height: 29px;
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 9px;
+            border: 1px solid var(--mp-border);
+            border-radius: 999px;
+            color: var(--mp-muted);
+            background: var(--mp-surface-soft);
+            font-size: 8px;
+            line-height: 1;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .mp-group-items {
+            display: grid;
+            gap: 10px;
+            padding: 13px;
+        }
+
+        .mp-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 15px;
+            padding: 14px;
+            border: 1px solid var(--mp-border);
+            border-radius: 14px;
+            background: #ffffff;
+            transition:
+                transform 180ms ease,
+                box-shadow 180ms ease,
+                border-color 180ms ease;
+        }
+
+        .mp-item:hover {
+            border-color: #cad5e5;
+            box-shadow: var(--mp-shadow-hover);
+            transform: translateY(-1px);
+        }
+
+        .mp-item-main {
+            min-width: 0;
+        }
+
+        .mp-item-name {
+            margin: 0;
+            color: var(--mp-text);
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: 700;
+        }
+
+        .mp-item-meta {
+            margin: 5px 0 0;
+            color: var(--mp-muted);
+            font-size: 9px;
+            line-height: 1.5;
+        }
+
+        .mp-item-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 9px;
+        }
+
+        .mp-tag {
+            min-height: 24px;
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 8px;
+            border: 1px solid var(--mp-border);
+            border-radius: 999px;
+            color: var(--mp-muted);
+            background: var(--mp-surface-soft);
+            font-size: 8px;
+            line-height: 1;
+            font-weight: 700;
+        }
+
+        .mp-item-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 7px;
+            margin-top: 9px;
+            padding: 9px;
+            border: 1px solid #d9d0f1;
+            border-radius: 9px;
+            color: var(--mp-violet-dark);
+            background: var(--mp-violet-soft);
+            font-size: 8px;
+            line-height: 1.55;
+        }
+
+        .mp-item-note svg {
+            width: 13px;
+            height: 13px;
+            flex: 0 0 13px;
+        }
+
+        .mp-item-actions {
+            display: grid;
+            gap: 7px;
+            min-width: 128px;
+        }
+
+        .mp-status {
+            min-height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border: 1px solid var(--mp-border);
+            border-radius: 9px;
+            cursor: pointer;
+            font-size: 8px;
+            line-height: 1;
+            font-weight: 700;
+            transition:
+                transform 180ms ease,
+                opacity 180ms ease;
+        }
+
+        .mp-status:hover {
+            transform: translateY(-1px);
+        }
+
+        .mp-status svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .mp-status.is-consumed {
+            color: var(--mp-green);
+            border-color: #b9dfd1;
+            background: var(--mp-green-soft);
+        }
+
+        .mp-status.is-planned {
+            color: var(--mp-blue-dark);
+            border-color: #cbd9ef;
+            background: var(--mp-blue-soft);
+        }
+
+        .mp-item-delete {
+            min-height: 34px;
+            padding: 7px 10px;
+            font-size: 8px;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Form
+        |--------------------------------------------------------------------------
+        */
+
+        .mp-form-grid {
+            display: grid;
             gap: 14px;
         }
 
-        .form-group {
+        .mp-form-row {
             display: grid;
-            gap: 7px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
         }
 
-        .form-group.full {
-            grid-column: 1 / -1;
+        .mp-form-group {
+            min-width: 0;
         }
 
-        .form-label {
-            color: #424b45;
-            font-weight: 900;
-            font-size: 13px;
+        .mp-label {
+            display: block;
+            margin: 0 0 7px;
+            color: var(--mp-muted);
+            font-size: 9px;
+            line-height: 1.3;
+            font-weight: 700;
+            letter-spacing: 0.02em;
         }
 
-        .form-input,
-        .form-select,
-        .form-textarea {
+        .mp-input,
+        .mp-select,
+        .mp-textarea {
             width: 100%;
-            border: 1px solid #ead8dd;
-            background: #fff;
-            color: #27302a;
-            border-radius: 16px;
-            padding: 12px 14px;
+            border: 1px solid var(--mp-border-strong);
+            border-radius: 10px;
+            color: var(--mp-text);
+            background: #fbfcff;
             outline: none;
-            font-size: 14px;
-            transition: .2s ease;
+            font-size: 11px;
+            transition:
+                border-color 180ms ease,
+                box-shadow 180ms ease,
+                background 180ms ease;
         }
 
-        .form-textarea {
-            min-height: 96px;
+        .mp-input,
+        .mp-select {
+            min-height: 44px;
+            padding: 10px 12px;
+        }
+
+        .mp-textarea {
+            min-height: 100px;
+            padding: 11px 12px;
             resize: vertical;
         }
 
-        .form-input:focus,
-        .form-select:focus,
-        .form-textarea:focus {
-            border-color: rgba(236, 111, 159, .75);
-            box-shadow: 0 0 0 4px rgba(236, 111, 159, .12);
+        .mp-input::placeholder,
+        .mp-textarea::placeholder {
+            color: #a0a6b0;
         }
 
-        .form-error {
-            color: #cf325f;
-            font-size: 12px;
-            font-weight: 800;
+        .mp-input:focus,
+        .mp-select:focus,
+        .mp-textarea:focus {
+            border-color: var(--mp-blue);
+            background: #ffffff;
+            box-shadow:
+                0 0 0 3px rgba(124, 159, 211, 0.14);
         }
 
-        .meal-group-list {
+        .mp-field-error {
+            display: block;
+            margin-top: 6px;
+            color: var(--mp-red);
+            font-size: 9px;
+            line-height: 1.4;
+        }
+
+        .mp-field-hint {
+            margin: 6px 0 0;
+            color: var(--mp-faint);
+            font-size: 8px;
+            line-height: 1.5;
+        }
+
+        .mp-search-wrapper {
+            position: relative;
+        }
+
+        .mp-search-icon {
+            position: absolute;
+            z-index: 2;
+            top: 50%;
+            left: 13px;
+            width: 17px;
+            height: 17px;
+            color: var(--mp-faint);
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .mp-search-wrapper .mp-input {
+            padding-left: 40px;
+        }
+
+        .mp-add-summary {
             display: grid;
-            gap: 16px;
+            gap: 8px;
+            margin-top: 5px;
+            padding: 12px;
+            border: 1px solid var(--mp-border);
+            border-radius: 12px;
+            background: var(--mp-surface-soft);
         }
 
-        .meal-group {
-            border-radius: 24px;
-            background: #fffafc;
-            border: 1px solid #f4dfe7;
-            overflow: hidden;
-        }
-
-        .meal-group-head {
-            padding: 16px 18px;
+        .mp-add-summary-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            border-bottom: 1px solid #f3e0e7;
+            color: var(--mp-muted);
+            font-size: 8px;
+            line-height: 1.4;
         }
 
-        .meal-group-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 950;
-            color: #242c26;
+        .mp-add-summary-row strong {
+            color: var(--mp-text);
+            font-size: 9px;
+            font-weight: 700;
+            text-align: right;
         }
 
-        .meal-group-total {
-            color: var(--pm-muted);
-            font-size: 12px;
-            font-weight: 900;
-            white-space: nowrap;
+        .mp-form-action {
+            margin-top: 4px;
         }
 
-        .meal-items {
-            display: grid;
-            gap: 10px;
-            padding: 14px;
+        .mp-manage-food {
+            margin-top: 11px;
         }
 
-        .meal-item {
-            border-radius: 19px;
-            background: #fff;
-            border: 1px solid #f0e2e6;
-            padding: 15px;
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 14px;
-            align-items: center;
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Empty
+        |--------------------------------------------------------------------------
+        */
 
-        .meal-name {
-            margin: 0;
-            color: #242c26;
-            font-weight: 950;
-            line-height: 1.3;
-        }
-
-        .meal-detail {
-            margin-top: 6px;
-            color: var(--pm-muted);
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .meal-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            margin-top: 10px;
-        }
-
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            padding: 5px 9px;
-            border-radius: 999px;
-            background: #f5faf6;
-            border: 1px solid #dbeee1;
-            color: #4c7f5e;
-            font-weight: 900;
-            font-size: 11px;
-        }
-
-        .item-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .status-pill {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 7px;
-            border-radius: 999px;
-            padding: 9px 12px;
-            font-weight: 900;
-            font-size: 12px;
-            border: 1px solid transparent;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .status-done {
-            background: #edf9f0;
-            color: #2e7a4e;
-            border-color: #caebd3;
-        }
-
-        .status-plan {
-            background: #fff4f8;
-            color: #c74c7a;
-            border-color: #ffd7e4;
-        }
-
-        .small-note {
-            margin-top: 9px;
-            color: var(--pm-muted);
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 38px 16px;
-            border-radius: 22px;
-            background: #fffafc;
-            border: 1px dashed #e9ccd6;
-        }
-
-        .empty-icon {
-            width: 58px;
-            height: 58px;
-            border-radius: 22px;
-            margin: 0 auto 13px;
+        .mp-empty {
+            min-height: 220px;
             display: grid;
             place-items: center;
-            background: #fff0f6;
-            color: var(--pm-primary-dark);
-            font-size: 27px;
+            padding: 28px;
+            border: 1px dashed var(--mp-border-strong);
+            border-radius: 15px;
+            background: #fbfcff;
+            text-align: center;
         }
 
-        .empty-state h4 {
+        .mp-empty.is-small {
+            min-height: 135px;
+            padding: 18px;
+        }
+
+        .mp-empty-icon {
+            width: 55px;
+            height: 55px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 12px;
+            border-radius: 17px;
+            color: var(--mp-blue-dark);
+            background: var(--mp-blue-soft);
+        }
+
+        .mp-empty.is-small .mp-empty-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 13px;
+        }
+
+        .mp-empty-icon svg {
+            width: 27px;
+            height: 27px;
+        }
+
+        .mp-empty.is-small .mp-empty-icon svg {
+            width: 21px;
+            height: 21px;
+        }
+
+        .mp-empty-title {
             margin: 0;
-            color: #242c26;
-            font-size: 16px;
+            color: var(--mp-text);
+            font-size: 13px;
+            line-height: 1.4;
+            font-weight: 700;
         }
 
-        .empty-state p {
-            margin: 8px auto 0;
-            max-width: 440px;
-            color: var(--pm-muted);
-            font-size: 13px;
+        .mp-empty-copy {
+            max-width: 420px;
+            margin: 6px auto 0;
+            color: var(--mp-muted);
+            font-size: 9px;
             line-height: 1.6;
         }
 
-        @media (max-width: 1100px) {
-            .content-grid {
-                grid-template-columns: 1fr;
+        /*
+        |--------------------------------------------------------------------------
+        | Loading
+        |--------------------------------------------------------------------------
+        */
+
+        .mp-loading-line {
+            height: 3px;
+            overflow: hidden;
+            margin-bottom: -3px;
+            border-radius: 999px;
+            background: transparent;
+        }
+
+        .mp-loading-line::after {
+            content: "";
+            width: 38%;
+            height: 100%;
+            display: block;
+            border-radius: inherit;
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--mp-blue),
+                    var(--mp-violet),
+                    var(--mp-mint)
+                );
+            animation:
+                mp-loading 900ms ease-in-out infinite alternate;
+        }
+
+        @keyframes mp-loading {
+            from {
+                transform: translateX(-15%);
             }
 
-            .summary-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+            to {
+                transform: translateX(185%);
             }
         }
 
-        @media (max-width: 720px) {
-            .meal-hero,
-            .card-head,
-            .card-body {
+        /*
+        |--------------------------------------------------------------------------
+        | Responsive
+        |--------------------------------------------------------------------------
+        */
+
+        @media (max-width: 1360px) {
+            .mp-summary-grid {
+                grid-template-columns:
+                    repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .mp-hero-layout,
+            .mp-content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mp-hero-progress {
+                max-width: 620px;
+            }
+
+            .mp-date-panel {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .mp-date-controls {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .mp-stack {
+                gap: 17px;
+            }
+
+            .mp-hero {
+                min-height: auto;
+                padding: 24px 20px;
+                border-radius: 18px;
+            }
+
+            .mp-hero-title {
+                font-size: 31px;
+            }
+
+            .mp-hero-description {
+                font-size: 12px;
+            }
+
+            .mp-hero-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .mp-hero-actions .mp-button {
+                width: 100%;
+            }
+
+            .mp-date-controls {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .mp-date-input {
+                width: 100%;
+                min-width: 0;
+                grid-column: 1 / -1;
+            }
+
+            .mp-date-controls
+            .mp-button-danger {
+                grid-column: 1 / -1;
+            }
+
+            .mp-summary-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .mp-panel {
+                border-radius: 18px;
+            }
+
+            .mp-panel-head {
+                flex-direction: column;
                 padding: 18px;
             }
 
-            .hero-content {
-                flex-direction: column;
+            .mp-panel-body {
+                padding: 18px;
             }
 
-            .hero-content .btn-main,
-            .hero-content .btn-soft,
-            .date-card .btn-soft,
-            .date-card .btn-danger,
-            .date-card .btn-main {
-                width: 100%;
-            }
-
-            .date-card {
-                align-items: stretch;
-            }
-
-            .date-nav {
-                width: 100%;
-                flex-direction: column;
-            }
-
-            .summary-grid,
-            .form-grid {
+            .mp-item {
                 grid-template-columns: 1fr;
             }
 
-            .meal-item {
+            .mp-item-actions {
+                min-width: 0;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .mp-form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 450px) {
+            .mp-date-controls,
+            .mp-summary-grid,
+            .mp-item-actions,
+            .mp-progress-meta {
                 grid-template-columns: 1fr;
             }
 
-            .item-actions {
-                flex-direction: column;
+            .mp-date-controls
+            .mp-button-danger,
+            .mp-date-input {
+                grid-column: auto;
+            }
+
+            .mp-hero-title {
+                font-size: 28px;
             }
         }
     </style>
 
-    <section class="meal-hero">
-        <div class="hero-content">
-            <div>
-                <div class="hero-eyebrow">
-                    <span>🍽️</span>
-                    <span>Meal Plan Harian</span>
-                </div>
+    <div class="mp-stack">
+        {{-- Hero --}}
+        <section class="mp-hero">
+            <div class="mp-hero-layout">
+                <div class="mp-hero-content">
+                    <div class="mp-kicker">
+                        <x-heroicon-o-calendar-days />
 
-                <h1 class="hero-title">
-                    Susun jadwal makan
-                    <span>lebih terarah.</span>
-                </h1>
+                        <span>Meal Plan Harian</span>
+                    </div>
 
-                <p class="hero-desc">
-                    Pilih tanggal, tambahkan makanan ke waktu makan tertentu,
-                    lalu tandai menu yang sudah dikonsumsi agar progres kalori lebih rapi.
-                </p>
-            </div>
+                    <h1 class="mp-hero-title">
+                        Susun jadwal makan
+                        <span>lebih terarah.</span>
+                    </h1>
 
-            <button type="button" class="btn-main" wire:click="createMealPlan">
-                <span>＋</span>
-                <span>Siapkan Meal Plan</span>
-            </button>
-        </div>
-    </section>
-
-    @if (session('meal_plan_success'))
-        <div class="alert-success">
-            {{ session('meal_plan_success') }}
-        </div>
-    @endif
-
-    @if (session('meal_plan_error'))
-        <div class="alert-error">
-            {{ session('meal_plan_error') }}
-        </div>
-    @endif
-
-    <section class="date-card">
-        <div>
-            <h2 class="date-title">
-                {{ $dateLabel }}
-            </h2>
-
-            <p class="date-subtitle">
-                {{ $hasMealPlan ? 'Meal plan sudah tersedia untuk tanggal ini.' : 'Belum ada meal plan. Tambahkan item untuk membuat otomatis.' }}
-            </p>
-        </div>
-
-        <div class="date-nav">
-            <button type="button" class="btn-soft" wire:click="previousDate">
-                ← Sebelumnya
-            </button>
-
-            <input
-                type="date"
-                class="form-input"
-                style="min-width: 180px;"
-                wire:model.live="selectedDate"
-            >
-
-            <button type="button" class="btn-soft" wire:click="nextDate">
-                Berikutnya →
-            </button>
-
-            <button type="button" class="btn-green" wire:click="todayDate">
-                Hari Ini
-            </button>
-
-            @if ($hasMealPlan)
-                <button
-                    type="button"
-                    class="btn-danger"
-                    wire:click="deleteMealPlan"
-                    wire:confirm="Hapus semua meal plan pada tanggal ini?"
-                >
-                    Hapus Plan
-                </button>
-            @endif
-        </div>
-    </section>
-
-    <section class="summary-grid">
-        <div class="summary-card">
-            <div class="summary-icon">🍱</div>
-            <div class="summary-value">
-                {{ number_format((int) ($summary['jumlah_menu'] ?? 0), 0, ',', '.') }}
-            </div>
-            <div class="summary-label">Jumlah menu</div>
-        </div>
-
-        <div class="summary-card">
-            <div class="summary-icon">🔥</div>
-            <div class="summary-value">
-                {{ number_format((int) ($summary['total_kalori'] ?? 0), 0, ',', '.') }}
-            </div>
-            <div class="summary-label">Total kalori</div>
-        </div>
-
-        <div class="summary-card">
-            <div class="summary-icon">✅</div>
-            <div class="summary-value">
-                {{ number_format((int) ($summary['consumed_kalori'] ?? 0), 0, ',', '.') }}
-            </div>
-            <div class="summary-label">Kalori dikonsumsi</div>
-        </div>
-
-        <div class="summary-card">
-            <div class="summary-icon">💪</div>
-            <div class="summary-value">
-                {{ number_format((float) ($summary['total_protein'] ?? 0), 1, ',', '.') }}g
-            </div>
-            <div class="summary-label">Total protein</div>
-        </div>
-    </section>
-
-    <section class="content-grid">
-        <div class="content-card">
-            <div class="card-head">
-                <div>
-                    <h2 class="card-title">Jadwal Makan</h2>
-                    <p class="card-subtitle">
-                        Daftar menu yang masuk ke meal plan tanggal terpilih.
+                    <p class="mp-hero-description">
+                        Atur menu berdasarkan waktu makan, porsi, dan
+                        kebutuhan nutrisi. Tandai makanan yang sudah
+                        dikonsumsi agar progres harian selalu terpantau.
                     </p>
-                </div>
-            </div>
 
-            <div class="card-body">
-                @if (count($mealPlanItems) > 0)
-                    <div class="meal-group-list">
-                        @foreach ($groupedItems as $group)
-                            <div class="meal-group" wire:key="meal-group-{{ $group['key'] }}">
-                                <div class="meal-group-head">
-                                    <div class="meal-group-title">
-                                        <span>{{ $group['icon'] }}</span>
-                                        <span>{{ $group['label'] }}</span>
-                                    </div>
-
-                                    <div class="meal-group-total">
-                                        {{ number_format((int) $group['total_kalori'], 0, ',', '.') }} kkal
-                                    </div>
-                                </div>
-
-                                <div class="meal-items">
-                                    @if (count($group['items']) > 0)
-                                        @foreach ($group['items'] as $item)
-                                            <div class="meal-item" wire:key="meal-plan-item-{{ $item['id'] }}">
-                                                <div>
-                                                    <h3 class="meal-name">
-                                                        {{ $item['nama'] }}
-                                                    </h3>
-
-                                                    <div class="meal-detail">
-                                                        {{ number_format((float) $item['porsi'], 1, ',', '.') }} porsi
-                                                        · {{ number_format((int) $item['total_kalori'], 0, ',', '.') }} kkal
-                                                    </div>
-
-                                                    <div class="meal-tags">
-                                                        <span class="tag">
-                                                            Protein {{ number_format((float) $item['total_protein'], 1, ',', '.') }}g
-                                                        </span>
-                                                        <span class="tag">
-                                                            Karbo {{ number_format((float) $item['total_karbohidrat'], 1, ',', '.') }}g
-                                                        </span>
-                                                        <span class="tag">
-                                                            Lemak {{ number_format((float) $item['total_lemak'], 1, ',', '.') }}g
-                                                        </span>
-                                                    </div>
-
-                                                    @if (! empty($item['catatan']))
-                                                        <div class="small-note">
-                                                            {{ $item['catatan'] }}
-                                                        </div>
-                                                    @endif
-                                                </div>
-
-                                                <div class="item-actions">
-                                                    <button
-                                                        type="button"
-                                                        wire:click="toggleConsumed({{ (int) $item['id'] }})"
-                                                        class="status-pill {{ $item['is_consumed'] ? 'status-done' : 'status-plan' }}"
-                                                    >
-                                                        @if ($item['is_consumed'])
-                                                            <span>✅</span>
-                                                            <span>Sudah dimakan</span>
-                                                        @else
-                                                            <span>⏳</span>
-                                                            <span>Belum dimakan</span>
-                                                        @endif
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        class="btn-danger"
-                                                        wire:click="deleteItem({{ (int) $item['id'] }})"
-                                                        wire:confirm="Hapus item meal plan ini?"
-                                                    >
-                                                        Hapus
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    @else
-                                        <div class="empty-state" style="padding: 24px 14px;">
-                                            <div class="empty-icon">🍽️</div>
-                                            <h4>Belum ada menu {{ strtolower($group['label']) }}</h4>
-                                            <p>
-                                                Tambahkan makanan dari form di samping.
-                                            </p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="empty-state">
-                        <div class="empty-icon">🍽️</div>
-                        <h4>Belum ada menu di tanggal ini</h4>
-                        <p>
-                            Pilih makanan dari daftar, tentukan waktu makan,
-                            lalu simpan agar meal plan otomatis dibuat.
-                        </p>
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        <aside class="content-card">
-            <div class="card-head">
-                <div>
-                    <h2 class="card-title">Tambah Menu</h2>
-                    <p class="card-subtitle">
-                        Masukkan makanan ke meal plan tanggal terpilih.
-                    </p>
-                </div>
-            </div>
-
-            <div class="card-body">
-                <form wire:submit.prevent="addMealPlanItem">
-                    <div class="form-grid">
-                        <div class="form-group full">
-                            <label class="form-label" for="makananSearch">Cari Makanan</label>
-                            <input
-                                id="makananSearch"
-                                type="search"
-                                class="form-input"
-                                placeholder="Ketik nama makanan..."
-                                wire:model.live.debounce.400ms="makananSearch"
-                            >
-                        </div>
-
-                        <div class="form-group full">
-                            <label class="form-label" for="selectedMakananId">Pilih Makanan</label>
-                            <select
-                                id="selectedMakananId"
-                                class="form-select"
-                                wire:model="selectedMakananId"
-                            >
-                                <option value="">Pilih makanan</option>
-                                @foreach ($makananOptions as $makanan)
-                                    <option value="{{ $makanan['id'] }}">
-                                        {{ $makanan['nama'] }} · {{ number_format((int) $makanan['kalori'], 0, ',', '.') }} kkal
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('selectedMakananId')
-                                <span class="form-error">{{ $message }}</span>
-                            @enderror
-
-                            @if (count($makananOptions) === 0)
-                                <div class="small-note">
-                                    Belum ada makanan. Tambahkan dulu dari halaman Makanan Saya.
-                                </div>
-                            @endif
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="selectedMealTime">Waktu Makan</label>
-                            <select
-                                id="selectedMealTime"
-                                class="form-select"
-                                wire:model="selectedMealTime"
-                            >
-                                @foreach ($mealTimeOptions as $value => $label)
-                                    <option value="{{ $value }}">
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('selectedMealTime')
-                                <span class="form-error">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="selectedPorsi">Porsi</label>
-                            <input
-                                id="selectedPorsi"
-                                type="number"
-                                step="0.1"
-                                min="0.1"
-                                class="form-input"
-                                wire:model="selectedPorsi"
-                            >
-                            @error('selectedPorsi')
-                                <span class="form-error">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="form-group full">
-                            <label class="form-label" for="selectedCatatan">Catatan</label>
-                            <textarea
-                                id="selectedCatatan"
-                                class="form-textarea"
-                                placeholder="Opsional, contoh: makan setelah olahraga"
-                                wire:model="selectedCatatan"
-                            ></textarea>
-                            @error('selectedCatatan')
-                                <span class="form-error">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 18px;">
+                    <div class="mp-hero-actions">
                         <button
-                            type="submit"
-                            class="btn-main"
+                            type="button"
+                            class="mp-button mp-button-primary"
+                            wire:click="createMealPlan"
                             wire:loading.attr="disabled"
-                            style="width: 100%;"
+                            wire:target="createMealPlan"
                         >
-                            <span wire:loading.remove wire:target="addMealPlanItem">
-                                Tambahkan ke Meal Plan
+                            <x-heroicon-o-plus />
+
+                            <span
+                                wire:loading.remove
+                                wire:target="createMealPlan"
+                            >
+                                Siapkan Meal Plan
                             </span>
-                            <span wire:loading wire:target="addMealPlanItem">
-                                Menambahkan...
+
+                            <span
+                                wire:loading
+                                wire:target="createMealPlan"
+                            >
+                                Menyiapkan...
                             </span>
                         </button>
-                    </div>
-                </form>
 
-                <div style="margin-top: 14px;">
-                    <a href="{{ route('user.makanan') }}" class="btn-soft" style="width: 100%;">
-                        Kelola Data Makanan
-                    </a>
+                        <a
+                            href="{{ route('user.makanan') }}"
+                            class="mp-button mp-button-outline"
+                        >
+                            <x-heroicon-o-cake />
+
+                            <span>Kelola Makanan</span>
+                        </a>
+                    </div>
+                </div>
+
+                <aside class="mp-hero-progress">
+                    <div class="mp-progress-head">
+                        <div>
+                            <h2 class="mp-progress-title">
+                                Progress Konsumsi
+                            </h2>
+
+                            <p class="mp-progress-copy">
+                                Kalori yang sudah dikonsumsi dari
+                                seluruh menu hari ini.
+                            </p>
+                        </div>
+
+                        <strong class="mp-progress-value-text">
+                            {{ $persentaseDikonsumsi }}%
+                        </strong>
+                    </div>
+
+                    <div
+                        class="mp-progress-track"
+                        role="progressbar"
+                        aria-label="Progress konsumsi meal plan"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        aria-valuenow="{{ $persentaseDikonsumsi }}"
+                    >
+                        <div
+                            class="mp-progress-bar"
+                            style="width: {{ $persentaseDikonsumsi }}%;"
+                        ></div>
+                    </div>
+
+                    <div class="mp-progress-meta">
+                        <div class="mp-progress-stat">
+                            <strong>
+                                {{
+                                    number_format(
+                                        $kaloriDikonsumsi,
+                                        0,
+                                        ',',
+                                        '.'
+                                    )
+                                }} kkal
+                            </strong>
+
+                            <span>Sudah dikonsumsi</span>
+                        </div>
+
+                        <div class="mp-progress-stat">
+                            <strong>
+                                {{ $jumlahDikonsumsi }}
+                                dari
+                                {{ $jumlahMenu }}
+                            </strong>
+
+                            <span>Menu selesai</span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        {{-- Notifikasi --}}
+        @if (session('meal_plan_success'))
+            <div class="mp-alert mp-alert-success">
+                <x-heroicon-o-check-circle />
+
+                <div>
+                    {{ session('meal_plan_success') }}
                 </div>
             </div>
-        </aside>
-    </section>
+        @endif
+
+        @if (session('meal_plan_error'))
+            <div class="mp-alert mp-alert-error">
+                <x-heroicon-o-exclamation-circle />
+
+                <div>
+                    {{ session('meal_plan_error') }}
+                </div>
+            </div>
+        @endif
+
+        {{-- Navigasi tanggal --}}
+        <section class="mp-date-panel">
+            <div class="mp-date-copy">
+                <div class="mp-date-label">
+                    <div class="mp-date-icon">
+                        <x-heroicon-o-calendar-days />
+                    </div>
+
+                    <div>
+                        <h2 class="mp-date-title">
+                            {{ $dateLabel }}
+                        </h2>
+
+                        <p class="mp-date-subtitle">
+                            @if ($isToday)
+                                Kamu sedang melihat Meal Plan hari ini.
+                            @elseif ($hasMealPlan)
+                                Meal Plan tersedia untuk tanggal ini.
+                            @else
+                                Belum ada Meal Plan untuk tanggal ini.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mp-date-controls">
+                <button
+                    type="button"
+                    class="mp-button mp-button-soft"
+                    wire:click="previousDate"
+                    wire:loading.attr="disabled"
+                >
+                    <x-heroicon-o-chevron-left />
+                    <span>Sebelumnya</span>
+                </button>
+
+                <input
+                    type="date"
+                    class="mp-date-input"
+                    wire:model.live="selectedDate"
+                    aria-label="Pilih tanggal Meal Plan"
+                >
+
+                <button
+                    type="button"
+                    class="mp-button mp-button-soft"
+                    wire:click="nextDate"
+                    wire:loading.attr="disabled"
+                >
+                    <span>Berikutnya</span>
+                    <x-heroicon-o-chevron-right />
+                </button>
+
+                <button
+                    type="button"
+                    class="mp-button mp-button-success"
+                    wire:click="todayDate"
+                    wire:loading.attr="disabled"
+                >
+                    <x-heroicon-o-calendar />
+
+                    <span>Hari Ini</span>
+                </button>
+
+                @if ($hasMealPlan)
+                    <button
+                        type="button"
+                        class="mp-button mp-button-danger"
+                        wire:click="deleteMealPlan"
+                        wire:confirm="Hapus seluruh Meal Plan pada tanggal ini?"
+                        wire:loading.attr="disabled"
+                        wire:target="deleteMealPlan"
+                    >
+                        <x-heroicon-o-trash />
+
+                        <span
+                            wire:loading.remove
+                            wire:target="deleteMealPlan"
+                        >
+                            Hapus Plan
+                        </span>
+
+                        <span
+                            wire:loading
+                            wire:target="deleteMealPlan"
+                        >
+                            Menghapus...
+                        </span>
+                    </button>
+                @endif
+            </div>
+        </section>
+
+        {{-- Ringkasan --}}
+        <section class="mp-summary-grid">
+            <article class="mp-summary-card">
+                <div class="mp-summary-icon">
+                    <x-heroicon-o-clipboard-document-list />
+                </div>
+
+                <strong class="mp-summary-value">
+                    {{ number_format($jumlahMenu, 0, ',', '.') }}
+                </strong>
+
+                <span class="mp-summary-label">
+                    Jumlah menu
+                </span>
+            </article>
+
+            <article class="mp-summary-card">
+                <div class="mp-summary-icon">
+                    <x-heroicon-o-fire />
+                </div>
+
+                <strong class="mp-summary-value">
+                    {{
+                        number_format(
+                            $totalKalori,
+                            0,
+                            ',',
+                            '.'
+                        )
+                    }}
+                </strong>
+
+                <span class="mp-summary-label">
+                    Total kalori
+                </span>
+            </article>
+
+            <article class="mp-summary-card">
+                <div class="mp-summary-icon">
+                    <x-heroicon-o-check-circle />
+                </div>
+
+                <strong class="mp-summary-value">
+                    {{
+                        number_format(
+                            $kaloriDikonsumsi,
+                            0,
+                            ',',
+                            '.'
+                        )
+                    }}
+                </strong>
+
+                <span class="mp-summary-label">
+                    Kalori dikonsumsi
+                </span>
+            </article>
+
+            <article class="mp-summary-card">
+                <div class="mp-summary-icon">
+                    <x-heroicon-o-bolt />
+                </div>
+
+                <strong class="mp-summary-value">
+                    {{
+                        number_format(
+                            $totalProtein,
+                            1,
+                            ',',
+                            '.'
+                        )
+                    }}g
+                </strong>
+
+                <span class="mp-summary-label">
+                    Total protein
+                </span>
+            </article>
+
+            <article class="mp-summary-card">
+                <div class="mp-summary-icon">
+                    <x-heroicon-o-chart-bar />
+                </div>
+
+                <strong class="mp-summary-value">
+                    {{
+                        number_format(
+                            $totalKarbohidrat,
+                            1,
+                            ',',
+                            '.'
+                        )
+                    }}g
+                </strong>
+
+                <span class="mp-summary-label">
+                    Total karbohidrat
+                </span>
+            </article>
+
+            <article class="mp-summary-card">
+                <div class="mp-summary-icon">
+                    <x-heroicon-o-beaker />
+                </div>
+
+                <strong class="mp-summary-value">
+                    {{
+                        number_format(
+                            $totalLemak,
+                            1,
+                            ',',
+                            '.'
+                        )
+                    }}g
+                </strong>
+
+                <span class="mp-summary-label">
+                    Total lemak
+                </span>
+            </article>
+        </section>
+
+        {{-- Jadwal dan form --}}
+        <section class="mp-content-grid">
+            <article class="mp-panel">
+                <div
+                    class="mp-loading-line"
+                    wire:loading
+                    wire:target="selectedDate,previousDate,nextDate,todayDate,toggleConsumed,deleteItem"
+                ></div>
+
+                <div class="mp-panel-head">
+                    <div>
+                        <h2 class="mp-section-title">
+                            Jadwal Makan
+                        </h2>
+
+                        <p class="mp-section-description">
+                            Menu dibagi berdasarkan waktu makan agar
+                            jadwal harian lebih mudah dipantau.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mp-panel-body">
+                    @if (count($mealPlanItems) > 0)
+                        <div class="mp-group-list">
+                            @foreach ($groupedItems as $group)
+                                @php
+                                    $groupKey = $group['key']
+                                        ?? 'sarapan';
+
+                                    $groupTone = $groupTones[
+                                        $groupKey
+                                    ] ?? 'blue';
+
+                                    $groupTime = $groupTimes[
+                                        $groupKey
+                                    ] ?? 'Fleksibel';
+                                @endphp
+
+                                <section
+                                    class="mp-group"
+                                    data-tone="{{ $groupTone }}"
+                                    wire:key="meal-group-{{ $groupKey }}"
+                                >
+                                    <div class="mp-group-head">
+                                        <div class="mp-group-title-wrap">
+                                            <div class="mp-group-icon">
+                                                {{ $group['icon'] ?? '🍽️' }}
+                                            </div>
+
+                                            <div>
+                                                <h3 class="mp-group-title">
+                                                    {{
+                                                        $group['label']
+                                                        ?? 'Waktu Makan'
+                                                    }}
+                                                </h3>
+
+                                                <p class="mp-group-time">
+                                                    {{ $groupTime }}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <span class="mp-group-total">
+                                            {{
+                                                number_format(
+                                                    (int) (
+                                                        $group[
+                                                            'total_kalori'
+                                                        ]
+                                                        ?? 0
+                                                    ),
+                                                    0,
+                                                    ',',
+                                                    '.'
+                                                )
+                                            }}
+                                            kkal
+                                        </span>
+                                    </div>
+
+                                    <div class="mp-group-items">
+                                        @if (count($group['items'] ?? []) > 0)
+                                            @foreach ($group['items'] as $item)
+                                                <article
+                                                    class="mp-item"
+                                                    wire:key="meal-item-{{ $item['id'] }}"
+                                                >
+                                                    <div class="mp-item-main">
+                                                        <h4 class="mp-item-name">
+                                                            {{
+                                                                $item['nama']
+                                                                ?? 'Menu tanpa nama'
+                                                            }}
+                                                        </h4>
+
+                                                        <p class="mp-item-meta">
+                                                            {{
+                                                                number_format(
+                                                                    (float) (
+                                                                        $item[
+                                                                            'porsi'
+                                                                        ]
+                                                                        ?? 1
+                                                                    ),
+                                                                    1,
+                                                                    ',',
+                                                                    '.'
+                                                                )
+                                                            }}
+                                                            porsi
+                                                            ·
+                                                            {{
+                                                                number_format(
+                                                                    (int) (
+                                                                        $item[
+                                                                            'total_kalori'
+                                                                        ]
+                                                                        ?? 0
+                                                                    ),
+                                                                    0,
+                                                                    ',',
+                                                                    '.'
+                                                                )
+                                                            }}
+                                                            kkal
+                                                        </p>
+
+                                                        <div class="mp-item-tags">
+                                                            <span class="mp-tag">
+                                                                Protein
+                                                                {{
+                                                                    number_format(
+                                                                        (float) (
+                                                                            $item[
+                                                                                'total_protein'
+                                                                            ]
+                                                                            ?? 0
+                                                                        ),
+                                                                        1,
+                                                                        ',',
+                                                                        '.'
+                                                                    )
+                                                                }}g
+                                                            </span>
+
+                                                            <span class="mp-tag">
+                                                                Karbo
+                                                                {{
+                                                                    number_format(
+                                                                        (float) (
+                                                                            $item[
+                                                                                'total_karbohidrat'
+                                                                            ]
+                                                                            ?? 0
+                                                                        ),
+                                                                        1,
+                                                                        ',',
+                                                                        '.'
+                                                                    )
+                                                                }}g
+                                                            </span>
+
+                                                            <span class="mp-tag">
+                                                                Lemak
+                                                                {{
+                                                                    number_format(
+                                                                        (float) (
+                                                                            $item[
+                                                                                'total_lemak'
+                                                                            ]
+                                                                            ?? 0
+                                                                        ),
+                                                                        1,
+                                                                        ',',
+                                                                        '.'
+                                                                    )
+                                                                }}g
+                                                            </span>
+                                                        </div>
+
+                                                        @if (filled($item['catatan'] ?? null))
+                                                            <div class="mp-item-note">
+                                                                <x-heroicon-o-document-text />
+
+                                                                <span>
+                                                                    {{ $item['catatan'] }}
+                                                                </span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+
+                                                    <div class="mp-item-actions">
+                                                        <button
+                                                            type="button"
+                                                            class="mp-status {{
+                                                                ! empty(
+                                                                    $item[
+                                                                        'is_consumed'
+                                                                    ]
+                                                                )
+                                                                    ? 'is-consumed'
+                                                                    : 'is-planned'
+                                                            }}"
+                                                            wire:click="toggleConsumed({{ (int) $item['id'] }})"
+                                                            wire:loading.attr="disabled"
+                                                        >
+                                                            @if (! empty($item['is_consumed']))
+                                                                <x-heroicon-o-check-circle />
+
+                                                                <span>
+                                                                    Sudah dimakan
+                                                                </span>
+                                                            @else
+                                                                <x-heroicon-o-clock />
+
+                                                                <span>
+                                                                    Belum dimakan
+                                                                </span>
+                                                            @endif
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            class="mp-button mp-button-danger mp-item-delete"
+                                                            wire:click="deleteItem({{ (int) $item['id'] }})"
+                                                            wire:confirm="Hapus item Meal Plan ini?"
+                                                            wire:loading.attr="disabled"
+                                                        >
+                                                            <x-heroicon-o-trash />
+
+                                                            <span>Hapus</span>
+                                                        </button>
+                                                    </div>
+                                                </article>
+                                            @endforeach
+                                        @else
+                                            <div class="mp-empty is-small">
+                                                <div>
+                                                    <div class="mp-empty-icon">
+                                                        <x-heroicon-o-plus />
+                                                    </div>
+
+                                                    <h4 class="mp-empty-title">
+                                                        Belum ada menu
+                                                    </h4>
+
+                                                    <p class="mp-empty-copy">
+                                                        Tambahkan makanan untuk
+                                                        {{
+                                                            strtolower(
+                                                                $group[
+                                                                    'label'
+                                                                ]
+                                                                ?? 'waktu makan ini'
+                                                            )
+                                                        }}.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </section>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="mp-empty">
+                            <div>
+                                <div class="mp-empty-icon">
+                                    <x-heroicon-o-calendar-days />
+                                </div>
+
+                                <h3 class="mp-empty-title">
+                                    Belum ada menu pada tanggal ini
+                                </h3>
+
+                                <p class="mp-empty-copy">
+                                    Cari makanan pada form Tambah Menu,
+                                    pilih waktu makan dan porsi, kemudian
+                                    simpan ke Meal Plan.
+                                </p>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </article>
+
+            <aside class="mp-panel">
+                <div
+                    class="mp-loading-line"
+                    wire:loading
+                    wire:target="makananSearch,addMealPlanItem"
+                ></div>
+
+                <div class="mp-panel-head">
+                    <div>
+                        <h2 class="mp-section-title">
+                            Tambah Menu
+                        </h2>
+
+                        <p class="mp-section-description">
+                            Tambahkan makanan ke Meal Plan untuk
+                            {{ $dateLabel }}.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mp-panel-body">
+                    <form wire:submit.prevent="addMealPlanItem">
+                        <div class="mp-form-grid">
+                            <div class="mp-form-group">
+                                <label
+                                    for="makananSearch"
+                                    class="mp-label"
+                                >
+                                    Cari makanan
+                                </label>
+
+                                <div class="mp-search-wrapper">
+                                    <x-heroicon-o-magnifying-glass
+                                        class="mp-search-icon"
+                                    />
+
+                                    <input
+                                        id="makananSearch"
+                                        type="search"
+                                        class="mp-input"
+                                        placeholder="Ketik nama makanan..."
+                                        wire:model.live.debounce.400ms="makananSearch"
+                                    >
+                                </div>
+
+                                <p class="mp-field-hint">
+                                    Maksimal 30 hasil makanan akan
+                                    ditampilkan.
+                                </p>
+                            </div>
+
+                            <div class="mp-form-group">
+                                <label
+                                    for="selectedMakananId"
+                                    class="mp-label"
+                                >
+                                    Pilih makanan
+                                </label>
+
+                                <select
+                                    id="selectedMakananId"
+                                    class="mp-select"
+                                    wire:model="selectedMakananId"
+                                >
+                                    <option value="">
+                                        Pilih makanan
+                                    </option>
+
+                                    @foreach ($makananOptions as $makanan)
+                                        <option
+                                            value="{{ $makanan['id'] }}"
+                                        >
+                                            {{ $makanan['nama'] }}
+                                            ·
+                                            {{
+                                                number_format(
+                                                    (int) (
+                                                        $makanan[
+                                                            'kalori'
+                                                        ]
+                                                        ?? 0
+                                                    ),
+                                                    0,
+                                                    ',',
+                                                    '.'
+                                                )
+                                            }}
+                                            kkal
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                @error('selectedMakananId')
+                                    <span class="mp-field-error">
+                                        {{ $message }}
+                                    </span>
+                                @enderror
+
+                                @if (count($makananOptions) === 0)
+                                    <p class="mp-field-hint">
+                                        Tidak ada makanan yang sesuai.
+                                        Tambahkan data dari halaman
+                                        Makanan.
+                                    </p>
+                                @endif
+                            </div>
+
+                            <div class="mp-form-row">
+                                <div class="mp-form-group">
+                                    <label
+                                        for="selectedMealTime"
+                                        class="mp-label"
+                                    >
+                                        Waktu makan
+                                    </label>
+
+                                    <select
+                                        id="selectedMealTime"
+                                        class="mp-select"
+                                        wire:model="selectedMealTime"
+                                    >
+                                        @foreach ($mealTimeOptions as $value => $label)
+                                            <option value="{{ $value }}">
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+
+                                    @error('selectedMealTime')
+                                        <span class="mp-field-error">
+                                            {{ $message }}
+                                        </span>
+                                    @enderror
+                                </div>
+
+                                <div class="mp-form-group">
+                                    <label
+                                        for="selectedPorsi"
+                                        class="mp-label"
+                                    >
+                                        Jumlah porsi
+                                    </label>
+
+                                    <input
+                                        id="selectedPorsi"
+                                        type="number"
+                                        min="0.1"
+                                        max="100"
+                                        step="0.1"
+                                        class="mp-input"
+                                        wire:model="selectedPorsi"
+                                    >
+
+                                    @error('selectedPorsi')
+                                        <span class="mp-field-error">
+                                            {{ $message }}
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="mp-form-group">
+                                <label
+                                    for="selectedCatatan"
+                                    class="mp-label"
+                                >
+                                    Catatan
+                                </label>
+
+                                <textarea
+                                    id="selectedCatatan"
+                                    class="mp-textarea"
+                                    placeholder="Opsional, contoh: dikonsumsi setelah olahraga."
+                                    wire:model="selectedCatatan"
+                                ></textarea>
+
+                                @error('selectedCatatan')
+                                    <span class="mp-field-error">
+                                        {{ $message }}
+                                    </span>
+                                @enderror
+                            </div>
+
+                            <div class="mp-add-summary">
+                                <div class="mp-add-summary-row">
+                                    <span>Tanggal</span>
+
+                                    <strong>
+                                        {{ $dateLabel }}
+                                    </strong>
+                                </div>
+
+                                <div class="mp-add-summary-row">
+                                    <span>Waktu makan</span>
+
+                                    <strong>
+                                        {{
+                                            $mealTimeOptions[
+                                                $selectedMealTime
+                                            ]
+                                            ?? 'Sarapan'
+                                        }}
+                                    </strong>
+                                </div>
+
+                                <div class="mp-add-summary-row">
+                                    <span>Porsi</span>
+
+                                    <strong>
+                                        {{
+                                            number_format(
+                                                (float) (
+                                                    $selectedPorsi
+                                                    ?: 1
+                                                ),
+                                                1,
+                                                ',',
+                                                '.'
+                                            )
+                                        }}
+                                    </strong>
+                                </div>
+                            </div>
+
+                            <div class="mp-form-action">
+                                <button
+                                    type="submit"
+                                    class="mp-button mp-button-primary mp-button-block"
+                                    wire:loading.attr="disabled"
+                                    wire:target="addMealPlanItem"
+                                >
+                                    <x-heroicon-o-plus />
+
+                                    <span
+                                        wire:loading.remove
+                                        wire:target="addMealPlanItem"
+                                    >
+                                        Tambahkan ke Meal Plan
+                                    </span>
+
+                                    <span
+                                        wire:loading
+                                        wire:target="addMealPlanItem"
+                                    >
+                                        Menambahkan...
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="mp-manage-food">
+                        <a
+                            href="{{ route('user.makanan') }}"
+                            class="mp-button mp-button-outline mp-button-block"
+                        >
+                            <x-heroicon-o-cake />
+
+                            <span>Kelola Data Makanan</span>
+                        </a>
+                    </div>
+                </div>
+            </aside>
+        </section>
+    </div>
 </div>

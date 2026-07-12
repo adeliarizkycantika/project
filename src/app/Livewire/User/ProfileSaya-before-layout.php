@@ -8,10 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('layouts.user')]
 class ProfileSaya extends Component
 {
     public string $name = '';
@@ -54,15 +52,6 @@ class ProfileSaya extends Component
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user instanceof User) {
-            session()->flash(
-                'profile_error',
-                'User tidak ditemukan. Silakan login ulang.'
-            );
-
-            return;
-        }
-
         $validated = $this->validate([
             'name' => [
                 'required',
@@ -99,56 +88,28 @@ class ProfileSaya extends Component
             ],
             'activity_level' => [
                 'required',
-                Rule::in(
-                    array_keys(
-                        CalorieCalculatorService::ACTIVITY_FACTORS
-                    )
-                ),
+                Rule::in(array_keys(CalorieCalculatorService::ACTIVITY_FACTORS)),
             ],
         ], [
             'name.required' => 'Nama wajib diisi.',
-            'name.max' => 'Nama maksimal 255 karakter.',
-
             'email.required' => 'Email wajib diisi.',
             'email.email' => 'Format email tidak valid.',
-            'email.max' => 'Email maksimal 255 karakter.',
             'email.unique' => 'Email sudah digunakan oleh akun lain.',
-
             'gender.required' => 'Gender wajib dipilih.',
-            'gender.in' => 'Pilihan gender tidak valid.',
-
             'age.required' => 'Usia wajib diisi.',
-            'age.integer' => 'Usia harus berupa angka bulat.',
-            'age.min' => 'Usia minimal 10 tahun.',
-            'age.max' => 'Usia maksimal 100 tahun.',
-
             'height_cm.required' => 'Tinggi badan wajib diisi.',
-            'height_cm.integer' => 'Tinggi badan harus berupa angka bulat.',
-            'height_cm.min' => 'Tinggi badan minimal 100 cm.',
-            'height_cm.max' => 'Tinggi badan maksimal 250 cm.',
-
             'weight_kg.required' => 'Berat badan wajib diisi.',
-            'weight_kg.numeric' => 'Berat badan harus berupa angka.',
-            'weight_kg.min' => 'Berat badan minimal 25 kg.',
-            'weight_kg.max' => 'Berat badan maksimal 300 kg.',
-
             'activity_level.required' => 'Aktivitas wajib dipilih.',
-            'activity_level.in' => 'Tingkat aktivitas tidak valid.',
         ]);
 
         $calculator = app(CalorieCalculatorService::class);
 
-        $normalizedActivityLevel = $calculator
-            ->normalizeActivityLevel(
-                (string) $validated['activity_level']
-            );
+        $normalizedActivityLevel = $calculator->normalizeActivityLevel(
+            (string) $validated['activity_level']
+        );
 
         if (! $normalizedActivityLevel) {
-            $this->addError(
-                'activity_level',
-                'Aktivitas tidak valid.'
-            );
-
+            $this->addError('activity_level', 'Aktivitas tidak valid.');
             return;
         }
 
@@ -174,25 +135,13 @@ class ProfileSaya extends Component
         $this->activity_level = $normalizedActivityLevel;
         $this->daily_calorie_target = $dailyCalories;
 
-        session()->flash(
-            'profile_success',
-            'Profil berhasil diperbarui dan target kalori harian berhasil dihitung ulang.'
-        );
+        session()->flash('profile_success', 'Profil berhasil diperbarui dan target kalori harian berhasil dihitung ulang.');
     }
 
     public function updatePassword(): void
     {
         /** @var User $user */
         $user = Auth::user();
-
-        if (! $user instanceof User) {
-            session()->flash(
-                'profile_error',
-                'User tidak ditemukan. Silakan login ulang.'
-            );
-
-            return;
-        }
 
         $validated = $this->validate([
             'current_password' => [
@@ -207,23 +156,13 @@ class ProfileSaya extends Component
             ],
         ], [
             'current_password.required' => 'Password saat ini wajib diisi.',
-
             'password.required' => 'Password baru wajib diisi.',
             'password.min' => 'Password baru minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi password baru tidak cocok.',
         ]);
 
-        if (
-            ! Hash::check(
-                $validated['current_password'],
-                $user->password
-            )
-        ) {
-            $this->addError(
-                'current_password',
-                'Password saat ini tidak sesuai.'
-            );
-
+        if (! Hash::check($validated['current_password'], $user->password)) {
+            $this->addError('current_password', 'Password saat ini tidak sesuai.');
             return;
         }
 
@@ -231,16 +170,11 @@ class ProfileSaya extends Component
             'password' => Hash::make($validated['password']),
         ])->save();
 
-        $this->reset([
-            'current_password',
-            'password',
-            'password_confirmation',
-        ]);
+        $this->current_password = '';
+        $this->password = '';
+        $this->password_confirmation = '';
 
-        session()->flash(
-            'password_success',
-            'Password berhasil diperbarui.'
-        );
+        session()->flash('password_success', 'Password berhasil diperbarui.');
     }
 
     public function resetProfileForm(): void
@@ -249,10 +183,7 @@ class ProfileSaya extends Component
 
         $this->fillFromUser();
 
-        session()->flash(
-            'profile_success',
-            'Form profil dikembalikan ke data akun terbaru.'
-        );
+        session()->flash('profile_success', 'Form profil dikembalikan ke data akun terbaru.');
     }
 
     private function fillFromUser(): void
@@ -260,16 +191,9 @@ class ProfileSaya extends Component
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user instanceof User) {
-            return;
-        }
-
         $calculator = app(CalorieCalculatorService::class);
 
-        $normalizedActivityLevel = $calculator
-            ->normalizeActivityLevel(
-                $user->activity_level
-            );
+        $normalizedActivityLevel = $calculator->normalizeActivityLevel($user->activity_level);
 
         $this->name = (string) $user->name;
         $this->email = (string) $user->email;
