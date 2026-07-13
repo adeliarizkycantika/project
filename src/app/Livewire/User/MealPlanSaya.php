@@ -646,24 +646,278 @@ class MealPlanSaya extends Component
         return $groups;
     }
 
+    private function getTargetKaloriHarian(): int
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return 0;
+        }
+
+        /*
+         * Gunakan nilai target yang telah tersimpan apabila
+         * tersedia pada data pengguna.
+         */
+        $storedTarget = (float) (
+            $this->getAttributeValue(
+                $user,
+                [
+                    'kebutuhan_kalori_harian',
+                    'kebutuhan_kalori',
+                    'target_kalori',
+                    'kalori_harian',
+                    'daily_calorie_target',
+                    'daily_calories',
+                ]
+            ) ?? 0
+        );
+
+        if ($storedTarget > 0) {
+            return (int) round($storedTarget);
+        }
+
+        /*
+         * Apabila target belum tersimpan, hitung menggunakan
+         * rumus Harris-Benedict berdasarkan data tubuh.
+         */
+        $gender = mb_strtolower(
+            trim(
+                (string) (
+                    $this->getAttributeValue(
+                        $user,
+                        [
+                            'gender',
+                            'jenis_kelamin',
+                            'sex',
+                        ]
+                    ) ?? ''
+                )
+            )
+        );
+
+        $usia = (float) (
+            $this->getAttributeValue(
+                $user,
+                [
+                    'usia',
+                    'umur',
+                    'age',
+                ]
+            ) ?? 0
+        );
+
+        $tinggi = (float) (
+            $this->getAttributeValue(
+                $user,
+                [
+                    'tinggi_badan',
+                    'tinggi',
+                    'height',
+                ]
+            ) ?? 0
+        );
+
+        $berat = (float) (
+            $this->getAttributeValue(
+                $user,
+                [
+                    'berat_badan',
+                    'berat',
+                    'weight',
+                ]
+            ) ?? 0
+        );
+
+        $aktivitasRaw = $this->getAttributeValue(
+            $user,
+            [
+                'tingkat_aktivitas',
+                'aktivitas',
+                'activity_level',
+                'activity',
+            ]
+        );
+
+        if (
+            $gender === ''
+            || $usia <= 0
+            || $tinggi <= 0
+            || $berat <= 0
+        ) {
+            return 0;
+        }
+
+        $isFemale = in_array(
+            $gender,
+            [
+                'female',
+                'perempuan',
+                'wanita',
+                'p',
+            ],
+            true
+        );
+
+        $bmr = $isFemale
+            ? 447.6
+                + (9.25 * $berat)
+                + (3.10 * $tinggi)
+                - (4.33 * $usia)
+            : 88.4
+                + (13.4 * $berat)
+                + (4.8 * $tinggi)
+                - (5.68 * $usia);
+
+        $faktorAktivitas =
+            $this->resolveFaktorAktivitas(
+                $aktivitasRaw
+            );
+
+        return (int) round(
+            max(
+                0,
+                $bmr * $faktorAktivitas
+            )
+        );
+    }
+
+    private function resolveFaktorAktivitas(
+        mixed $aktivitas
+    ): float {
+        if (
+            is_numeric($aktivitas)
+            && (float) $aktivitas >= 1
+        ) {
+            return (float) $aktivitas;
+        }
+
+        $value = mb_strtolower(
+            trim((string) $aktivitas)
+        );
+
+        $value = str_replace(
+            [
+                ' ',
+                '-',
+            ],
+            '_',
+            $value
+        );
+
+        return match ($value) {
+            'ringan',
+            'light',
+            'lightly_active',
+            'aktivitas_ringan' => 1.375,
+
+            'sedang',
+            'moderate',
+            'moderately_active',
+            'aktivitas_sedang' => 1.55,
+
+            'berat',
+            'aktif',
+            'active',
+            'very_active',
+            'aktivitas_berat' => 1.725,
+
+            'sangat_berat',
+            'sangat_aktif',
+            'extra_active',
+            'extremely_active' => 1.9,
+
+            default => 1.2,
+        };
+    }
+
     private function getSummary(array $items): array
     {
-        $totalKalori = collect($items)->sum('total_kalori');
-        $totalProtein = collect($items)->sum('total_protein');
-        $totalKarbohidrat = collect($items)->sum('total_karbohidrat');
-        $totalLemak = collect($items)->sum('total_lemak');
+        $totalKalori = collect($items)
+            ->sum('total_kalori');
+
+        $totalProtein = collect($items)
+            ->sum('total_protein');
+
+        $totalKarbohidrat = collect($items)
+            ->sum('total_karbohidrat');
+
+        $totalLemak = collect($items)
+            ->sum('total_lemak');
 
         $consumedKalori = collect($items)
             ->where('is_consumed', true)
             ->sum('total_kalori');
 
+        $totalKalori = (int) round($totalKalori);
+
+        $targetKalori =
+            $this->getTargetKaloriHarian();
+
+        $selisihKalori =
+            $targetKalori - $totalKalori;
+
+        $sisaKalori = max(
+            0,
+            $selisihKalori
+        );
+
+        $kelebihanKalori = max(
+            0,
+            -$selisihKalori
+        );
+
+        $persentaseRencana =
+            $targetKalori > 0
+                ? (int) round(
+                    ($totalKalori / $targetKalori)
+                    * 100
+                )
+                : 0;
+
+        if ($targetKalori <= 0) {
+            $statusRencana =
+                'belum_tersedia';
+        } elseif ($selisihKalori > 0) {
+            $statusRencana = 'kurang';
+        } elseif ($selisihKalori < 0) {
+            $statusRencana = 'lebih';
+        } else {
+            $statusRencana = 'sesuai';
+        }
+
         return [
-            'jumlah_menu' => count($items),
-            'total_kalori' => (int) round($totalKalori),
-            'total_protein' => (float) $totalProtein,
-            'total_karbohidrat' => (float) $totalKarbohidrat,
-            'total_lemak' => (float) $totalLemak,
-            'consumed_kalori' => (int) round($consumedKalori),
+            'jumlah_menu' =>
+                count($items),
+
+            'total_kalori' =>
+                $totalKalori,
+
+            'target_kalori' =>
+                $targetKalori,
+
+            'sisa_kalori_rencana' =>
+                $sisaKalori,
+
+            'kelebihan_kalori_rencana' =>
+                $kelebihanKalori,
+
+            'persentase_rencana' =>
+                $persentaseRencana,
+
+            'status_rencana' =>
+                $statusRencana,
+
+            'total_protein' =>
+                (float) $totalProtein,
+
+            'total_karbohidrat' =>
+                (float) $totalKarbohidrat,
+
+            'total_lemak' =>
+                (float) $totalLemak,
+
+            'consumed_kalori' =>
+                (int) round($consumedKalori),
         ];
     }
 

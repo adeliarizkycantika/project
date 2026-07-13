@@ -1369,6 +1369,105 @@
                 rgba(120, 155, 208, 0.15) !important;
         }
 
+    
+        /* meal-plan-target-card-start */
+
+        [data-meal-calorie-value] {
+            display: flex !important;
+            align-items: baseline !important;
+            flex-wrap: wrap !important;
+            gap: 3px !important;
+        }
+
+        .meal-target-current {
+            color: inherit;
+            font: inherit;
+            font-weight: inherit;
+        }
+
+        .meal-target-separator {
+            color: #9199a5;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .meal-target-goal {
+            color: #5579ad;
+            font-size: 13px;
+            font-weight: 850;
+        }
+
+        .meal-target-unit {
+            color: #7b8492;
+            font-size: 9px;
+            font-weight: 800;
+        }
+
+        [data-meal-calorie-label] {
+            display: block !important;
+        }
+
+        .meal-target-caption {
+            display: block;
+        }
+
+        .meal-target-status {
+            display: block;
+            margin-top: 5px;
+            font-size: 9px;
+            line-height: 1.35;
+            font-weight: 850;
+        }
+
+        .meal-target-status.is-kurang {
+            color: #b36d31;
+        }
+
+        .meal-target-status.is-sesuai {
+            color: #39816e;
+        }
+
+        .meal-target-status.is-lebih {
+            color: #b64353;
+        }
+
+        .meal-target-status.is-belum_tersedia {
+            color: #7b8492;
+        }
+
+        .meal-target-progress {
+            width: 100%;
+            height: 4px;
+            display: block;
+            overflow: hidden;
+            margin-top: 6px;
+            border-radius: 999px;
+            background: #e8edf4;
+        }
+
+        .meal-target-progress-fill {
+            height: 100%;
+            display: block;
+            border-radius: inherit;
+            background:
+                linear-gradient(
+                    90deg,
+                    #7d9fd3,
+                    #79c7b2
+                );
+        }
+
+        .meal-target-progress-fill.is-lebih {
+            background:
+                linear-gradient(
+                    90deg,
+                    #e5a061,
+                    #d86878
+                );
+        }
+
+        /* meal-plan-target-card-end */
+
     </style>
 
     <div class="mp-stack">
@@ -1622,25 +1721,170 @@
                 </span>
             </article>
 
-            <article class="mp-summary-card">
+            <article class="mp-summary-card" data-meal-calorie-target-card>
                 <div class="mp-summary-icon">
                     <x-heroicon-o-fire />
                 </div>
 
-                <strong class="mp-summary-value">
-                    {{
-                        number_format(
-                            $totalKalori,
-                            0,
-                            ',',
-                            '.'
-                        )
-                    }}
-                </strong>
+                <strong class="mp-summary-value" data-meal-calorie-value>
+                @if (
+                    ($summary['target_kalori'] ?? 0)
+                    > 0
+                )
+                    <span class="meal-target-current">
+                        {{
+                            number_format(
+                                (int) (
+                                    $summary['total_kalori']
+                                    ?? 0
+                                ),
+                                0,
+                                ',',
+                                '.'
+                            )
+                        }}
+                    </span>
 
-                <span class="mp-summary-label">
-                    Total kalori
+                    <span class="meal-target-separator">
+                        /
+                    </span>
+
+                    <span class="meal-target-goal">
+                        {{
+                            number_format(
+                                (int) (
+                                    $summary['target_kalori']
+                                    ?? 0
+                                ),
+                                0,
+                                ',',
+                                '.'
+                            )
+                        }}
+                    </span>
+
+                    <span class="meal-target-unit">
+                        kkal
+                    </span>
+                @else
+                    <span class="meal-target-current">
+                        {{
+                            number_format(
+                                (int) (
+                                    $summary['total_kalori']
+                                    ?? 0
+                                ),
+                                0,
+                                ',',
+                                '.'
+                            )
+                        }}
+                    </span>
+
+                    <span class="meal-target-unit">
+                        kkal
+                    </span>
+                @endif
+</strong>
+
+                <span class="mp-summary-label" data-meal-calorie-label>
+                <span class="meal-target-caption">
+                    Rencana / target harian
                 </span>
+
+                @if (
+                    ($summary['target_kalori'] ?? 0)
+                    > 0
+                )
+                    <span
+                        class="meal-target-status
+                        is-{{
+                            $summary['status_rencana']
+                            ?? 'belum_tersedia'
+                        }}"
+                    >
+                        @if (
+                            ($summary['status_rencana'] ?? '')
+                            === 'kurang'
+                        )
+                            Kurang
+                            {{
+                                number_format(
+                                    (int) (
+                                        $summary[
+                                            'sisa_kalori_rencana'
+                                        ]
+                                        ?? 0
+                                    ),
+                                    0,
+                                    ',',
+                                    '.'
+                                )
+                            }}
+                            kkal
+                        @elseif (
+                            ($summary['status_rencana'] ?? '')
+                            === 'lebih'
+                        )
+                            Lebih
+                            {{
+                                number_format(
+                                    (int) (
+                                        $summary[
+                                            'kelebihan_kalori_rencana'
+                                        ]
+                                        ?? 0
+                                    ),
+                                    0,
+                                    ',',
+                                    '.'
+                                )
+                            }}
+                            kkal
+                        @else
+                            Target rencana terpenuhi
+                        @endif
+                    </span>
+
+                    <span
+                        class="meal-target-progress"
+                        aria-hidden="true"
+                    >
+                        <span
+                            class="meal-target-progress-fill
+                            is-{{
+                                $summary['status_rencana']
+                                ?? 'belum_tersedia'
+                            }}"
+                            style="
+                                width:
+                                {{
+                                    min(
+                                        100,
+                                        max(
+                                            0,
+                                            (int) (
+                                                $summary[
+                                                    'persentase_rencana'
+                                                ]
+                                                ?? 0
+                                            )
+                                        )
+                                    )
+                                }}%;
+                            "
+                        ></span>
+                    </span>
+                @else
+                    <span
+                        class="meal-target-status
+                        is-belum_tersedia"
+                    >
+                        Lengkapi data tubuh untuk
+                        memperoleh target kalori
+                    </span>
+                @endif
+</span>
             </article>
 
             <article class="mp-summary-card">
