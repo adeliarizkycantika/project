@@ -35,7 +35,7 @@ class MealPlanSaya extends Component
         'sarapan' => 'Sarapan',
         'makan_siang' => 'Makan Siang',
         'makan_malam' => 'Makan Malam',
-        'cemilan' => 'Cemilan',
+        'snack' => 'Cemilan',
     ];
 
     public function mount(): void
@@ -79,36 +79,62 @@ class MealPlanSaya extends Component
 
     public function addMealPlanItem(): void
     {
-        $validated = $this->validate([
-            'selectedDate' => [
-                'required',
-                'date',
+
+        // snack-normalization
+        $this->selectedMealTime = match (
+            (string) $this->selectedMealTime
+        ) {
+            'snack',
+            'camilan',
+            'cemilan' => 'snack',
+
+            default => (string) $this->selectedMealTime,
+        };
+
+
+        $validated = $this->validate(
+            [
+                'selectedMakananId' => [
+                    'required',
+                ],
+
+                'selectedMealTime' => [
+                    'required',
+                    'in:sarapan,makan_siang,makan_malam,snack',
+                ],
+
+                'selectedPorsi' => [
+                    'required',
+                    'numeric',
+                    'min:0.1',
+                ],
+
+                'selectedCatatan' => [
+                    'nullable',
+                    'string',
+                    'max:1000',
+                ],
             ],
-            'selectedMealTime' => [
-                'required',
-                'in:sarapan,makan_siang,makan_malam,cemilan',
-            ],
-            'selectedMakananId' => [
-                'required',
-                'integer',
-            ],
-            'selectedPorsi' => [
-                'required',
-                'numeric',
-                'min:0.1',
-                'max:100',
-            ],
-            'selectedCatatan' => [
-                'nullable',
-                'string',
-                'max:500',
-            ],
-        ], [
-            'selectedDate.required' => 'Tanggal wajib dipilih.',
-            'selectedMealTime.required' => 'Waktu makan wajib dipilih.',
-            'selectedMakananId.required' => 'Makanan wajib dipilih.',
-            'selectedPorsi.required' => 'Porsi wajib diisi.',
-        ]);
+            [
+                'selectedMakananId.required' =>
+                    'Pilih makanan terlebih dahulu.',
+
+                'selectedMealTime.required' =>
+                    'Pilih waktu makan terlebih dahulu.',
+
+                'selectedMealTime.in' =>
+                    'Waktu makan yang dipilih tidak valid.',
+
+                'selectedPorsi.required' =>
+                    'Jumlah porsi wajib diisi.',
+
+                'selectedPorsi.numeric' =>
+                    'Jumlah porsi harus berupa angka.',
+
+                'selectedPorsi.min' =>
+                    'Jumlah porsi minimal 0,1.',
+            ]
+        );
 
         $user = Auth::user();
 
@@ -1092,7 +1118,7 @@ class MealPlanSaya extends Component
                 'sarapan' => 'breakfast',
                 'makan_siang' => 'lunch',
                 'makan_malam' => 'dinner',
-                'cemilan' => 'snack',
+                'snack' => 'snack',
                 default => 'breakfast',
             };
         }
@@ -1106,7 +1132,7 @@ class MealPlanSaya extends Component
             'breakfast', 'sarapan', 'Sarapan' => 'sarapan',
             'lunch', 'makan_siang', 'Makan Siang' => 'makan_siang',
             'dinner', 'makan_malam', 'Makan Malam' => 'makan_malam',
-            'snack', 'cemilan', 'Cemilan' => 'cemilan',
+            'snack', 'snack', 'Cemilan' => 'snack',
             default => 'sarapan',
         };
     }
@@ -1117,7 +1143,7 @@ class MealPlanSaya extends Component
             'breakfast', 'sarapan' => 'Sarapan',
             'lunch', 'makan_siang' => 'Makan Siang',
             'dinner', 'makan_malam' => 'Makan Malam',
-            'snack', 'cemilan' => 'Cemilan',
+            'snack', 'snack' => 'Cemilan',
             default => 'Makan',
         };
     }
@@ -1128,7 +1154,7 @@ class MealPlanSaya extends Component
             'sarapan' => '🌤️',
             'makan_siang' => '☀️',
             'makan_malam' => '🌙',
-            'cemilan' => '🍓',
+            'snack' => '🍓',
             default => '🍽️',
         };
     }

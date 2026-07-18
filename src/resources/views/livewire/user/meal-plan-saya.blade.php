@@ -27,14 +27,14 @@
             'sarapan' => 'blue',
             'makan_siang' => 'violet',
             'makan_malam' => 'mint',
-            'cemilan' => 'peach',
+            'snack' => 'peach',
         ];
 
         $groupTimes = [
             'sarapan' => '07.00 – 09.00',
             'makan_siang' => '12.00 – 14.00',
             'makan_malam' => '18.00 – 20.00',
-            'cemilan' => 'Fleksibel',
+            'snack' => 'Fleksibel',
         ];
     @endphp
 
@@ -1467,6 +1467,110 @@
         }
 
         /* meal-plan-target-card-end */
+
+    
+        /* meal-plan-target-font-restore-start */
+
+        /*
+         * Nilai kalori utama mengikuti ukuran asli
+         * pada kartu statistik.
+         */
+        [data-meal-calorie-value] {
+            font-size: inherit !important;
+            line-height: inherit !important;
+            font-weight: inherit !important;
+        }
+
+        [data-meal-calorie-value]
+        .meal-target-current,
+
+        [data-meal-calorie-value]
+        .meal-target-goal {
+            font-size: inherit !important;
+            line-height: inherit !important;
+            font-weight: inherit !important;
+        }
+
+        /*
+         * Pemisah dan satuan dibuat proporsional,
+         * tetapi tidak sekecil aturan sebelumnya.
+         */
+        [data-meal-calorie-value]
+        .meal-target-separator {
+            font-size: 0.72em !important;
+            line-height: inherit !important;
+            font-weight: 800 !important;
+        }
+
+        [data-meal-calorie-value]
+        .meal-target-unit {
+            font-size: 0.55em !important;
+            line-height: inherit !important;
+            font-weight: 750 !important;
+        }
+
+        /*
+         * Keterangan mengikuti ukuran label asli kartu.
+         */
+        [data-meal-calorie-label],
+        [data-meal-calorie-label]
+        .meal-target-caption,
+        [data-meal-calorie-label]
+        .meal-target-status {
+            font-size: inherit !important;
+            line-height: inherit !important;
+        }
+
+        [data-meal-calorie-label]
+        .meal-target-status {
+            margin-top: 4px !important;
+            font-weight: 750 !important;
+        }
+
+        /* meal-plan-target-font-restore-end */
+
+    
+        /* meal-plan-calorie-bold-start */
+
+        /*
+         * Menyamakan ketebalan kartu Total Kalori
+         * dengan kartu statistik lainnya.
+         */
+        [data-meal-calorie-target-card]
+        [data-meal-calorie-value] {
+            font-weight: 850 !important;
+        }
+
+        [data-meal-calorie-target-card]
+        .meal-target-current,
+
+        [data-meal-calorie-target-card]
+        .meal-target-goal,
+
+        [data-meal-calorie-target-card]
+        .meal-target-separator {
+            font-weight: 850 !important;
+        }
+
+        [data-meal-calorie-target-card]
+        .meal-target-unit {
+            font-weight: 750 !important;
+        }
+
+        [data-meal-calorie-target-card]
+        [data-meal-calorie-label],
+
+        [data-meal-calorie-target-card]
+        .meal-target-caption {
+            font-weight: 750 !important;
+        }
+
+        [data-meal-calorie-target-card]
+        .meal-target-status {
+            font-weight: 850 !important;
+        }
+
+        /* meal-plan-calorie-bold-end */
 
     </style>
 
