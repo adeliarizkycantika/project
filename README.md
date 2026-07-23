@@ -1,3 +1,6 @@
+Nama : Adelia Rizky Cantika
+NIM : 20240801059
+
 # Sistem Pola Makan Sehat
 
 [![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)](https://laravel.com/)
